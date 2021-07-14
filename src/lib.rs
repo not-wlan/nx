@@ -4,7 +4,6 @@
 #![feature(llvm_asm)]
 #![feature(global_asm)]
 #![feature(alloc_error_handler)]
-#![feature(const_fn)]
 #![feature(const_generics)]
 #![feature(const_raw_ptr_to_usize_cast)]
 #![feature(const_raw_ptr_deref)]
