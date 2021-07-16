@@ -14,6 +14,12 @@
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(const_fn_transmute)]
 #![feature(const_mut_refs)]
+#![allow(
+  // This should be fixed lol...
+  not_unsafe_ptr_arg_deref,
+  mut_from_ref
+)]
+
 #![macro_use]
 
 // Required assembly bits

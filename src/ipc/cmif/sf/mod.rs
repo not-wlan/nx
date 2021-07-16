@@ -53,8 +53,8 @@ impl<const A: BufferAttribute, const S: usize> Buffer<A, S> {
         unsafe { &*(self.buf as *const T) }
     }
 
-    pub fn get_mut_as<T>(&self) -> &mut T {
-        unsafe { &mut *(self.buf as *mut T) }
+    pub unsafe fn get_mut_as<T>(&self) -> &mut T {
+        &mut *(self.buf as *mut T)
     }
 
     pub fn set_as<T>(&mut self, t: T) {
