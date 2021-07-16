@@ -198,7 +198,7 @@ impl<const S: usize> CString16<S> {
         let mut encode_buf: [u16; 2] = [0; 2];
         let mut i: isize = 0;
         unsafe {
-            ptr::write_bytes(ptr, 0, ptr_len * mem::size_of::<u16>());
+            ptr::write_bytes(ptr, 0, ptr_len);
             for ch in string.chars() {
                 let enc = ch.encode_utf16(&mut encode_buf);
                 *ptr.offset(i) = enc[0];
