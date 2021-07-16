@@ -1,17 +1,14 @@
-use crate::result::*;
-use crate::results;
-use crate::svc;
-use crate::arm;
+use crate::{arm, result::*, results, svc};
 
 pub struct RemoteEvent {
-    pub handle: svc::Handle
+    pub handle: svc::Handle,
 }
 
 impl RemoteEvent {
     pub const fn empty() -> Self {
         Self { handle: 0 }
     }
-    
+
     pub const fn new(handle: svc::Handle) -> Self {
         Self { handle: handle }
     }
@@ -36,17 +33,23 @@ impl Drop for RemoteEvent {
 
 pub struct SystemEvent {
     pub server_handle: svc::Handle,
-    pub client_handle: svc::Handle
+    pub client_handle: svc::Handle,
 }
 
 impl SystemEvent {
     pub const fn empty() -> Self {
-        Self { server_handle: 0, client_handle: 0 }
+        Self {
+            server_handle: 0,
+            client_handle: 0,
+        }
     }
-    
+
     pub fn new() -> Result<Self> {
         let (server_handle, client_handle) = svc::create_event()?;
-        Ok(Self { server_handle: server_handle, client_handle: client_handle })
+        Ok(Self {
+            server_handle: server_handle,
+            client_handle: client_handle,
+        })
     }
 
     pub fn signal(&self) -> Result<()> {
@@ -63,7 +66,7 @@ impl Drop for SystemEvent {
 
 pub enum WaiterType {
     Handle,
-    HandleWithClear
+    HandleWithClear,
 }
 
 pub const MAX_OBJECT_COUNT: u32 = 0x40;
@@ -71,14 +74,17 @@ pub const MAX_OBJECT_COUNT: u32 = 0x40;
 #[allow(dead_code)]
 pub struct Waiter {
     handle: svc::Handle,
-    wait_type: WaiterType
+    wait_type: WaiterType,
 }
 
 impl Waiter {
     pub const fn from(handle: svc::Handle, wait_type: WaiterType) -> Self {
-        Self { handle: handle, wait_type: wait_type }
+        Self {
+            handle: handle,
+            wait_type: wait_type,
+        }
     }
-    
+
     pub const fn from_handle(handle: svc::Handle) -> Self {
         Self::from(handle, WaiterType::Handle)
     }
@@ -110,8 +116,8 @@ fn wait_impl<W>(wait_objects: &[W], timeout: i64, wait_fn: WaitFn<W>) -> Result<
             true => {
                 let remaining = deadline - arm::get_system_tick();
                 arm::ticks_to_nanoseconds(remaining) as i64
-            },
-            false => -1
+            }
+            false => -1,
         };
         match (wait_fn)(wait_objects, this_timeout) {
             Ok(index) => return Ok(index),
@@ -120,8 +126,7 @@ fn wait_impl<W>(wait_objects: &[W], timeout: i64, wait_fn: WaitFn<W>) -> Result<
                     if has_timeout {
                         return Err(rc);
                     }
-                }
-                else if !results::os::ResultOperationCanceled::matches(rc) {
+                } else if !results::os::ResultOperationCanceled::matches(rc) {
                     return Err(rc);
                 }
             }

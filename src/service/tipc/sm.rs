@@ -1,11 +1,9 @@
-use crate::result::*;
-use crate::ipc::tipc::sf;
-use crate::service;
+use crate::{ipc::tipc::sf, result::*, service};
 
 pub use crate::ipc::tipc::sf::sm::*;
 
 pub struct UserInterface {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for UserInterface {
@@ -14,7 +12,7 @@ impl sf::IObject for UserInterface {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_tipc_interface_make_command_meta!(register_client: 0),
             ipc_tipc_interface_make_command_meta!(get_service_handle: 1),
             ipc_tipc_interface_make_command_meta!(register_service: 2),
@@ -28,7 +26,7 @@ impl sf::IObject for UserInterface {
             ipc_tipc_interface_make_command_meta!(atmosphere_declare_future_mitm: 65006),
             ipc_tipc_interface_make_command_meta!(atmosphere_clear_future_mitm: 65007),
             ipc_tipc_interface_make_command_meta!(atmosphere_has_service: 65100),
-            ipc_tipc_interface_make_command_meta!(atmosphere_wait_service: 65101)
+            ipc_tipc_interface_make_command_meta!(atmosphere_wait_service: 65101),
         ]
     }
 }
@@ -48,7 +46,12 @@ impl IUserInterface for UserInterface {
         ipc_tipc_client_send_request_command!([self.session.object_info; 1] (name) => (service_handle: sf::MoveHandle))
     }
 
-    fn register_service(&mut self, name: ServiceName, max_sessions: i32, is_light: bool) -> Result<sf::MoveHandle> {
+    fn register_service(
+        &mut self,
+        name: ServiceName,
+        max_sessions: i32,
+        is_light: bool,
+    ) -> Result<sf::MoveHandle> {
         ipc_tipc_client_send_request_command!([self.session.object_info; 2] (name, max_sessions, is_light) => (port_handle: sf::MoveHandle))
     }
 
@@ -60,15 +63,21 @@ impl IUserInterface for UserInterface {
         ipc_tipc_client_send_request_command!([self.session.object_info; 4] (process_id) => ())
     }
 
-    fn atmosphere_install_mitm(&mut self, name: ServiceName) -> Result<(sf::MoveHandle, sf::MoveHandle)> {
+    fn atmosphere_install_mitm(
+        &mut self,
+        name: ServiceName,
+    ) -> Result<(sf::MoveHandle, sf::MoveHandle)> {
         ipc_tipc_client_send_request_command!([self.session.object_info; 65000] (name) => (port_handle: sf::MoveHandle, query_handle: sf::MoveHandle))
     }
 
     fn atmosphere_uninstall_mitm(&mut self, name: ServiceName) -> Result<()> {
         ipc_tipc_client_send_request_command!([self.session.object_info; 65001] (name) => ())
     }
-    
-    fn atmosphere_acknowledge_mitm_session(&mut self, name: ServiceName) -> Result<(MitmProcessInfo, sf::MoveHandle)> {
+
+    fn atmosphere_acknowledge_mitm_session(
+        &mut self,
+        name: ServiceName,
+    ) -> Result<(MitmProcessInfo, sf::MoveHandle)> {
         ipc_tipc_client_send_request_command!([self.session.object_info; 65003] (name) => (info: MitmProcessInfo, session_handle: sf::MoveHandle))
     }
 

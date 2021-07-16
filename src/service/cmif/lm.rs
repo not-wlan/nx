@@ -1,12 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*, service};
 
 pub use crate::ipc::cmif::sf::lm::*;
 
 pub struct Logger {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for Logger {
@@ -15,9 +12,9 @@ impl sf::IObject for Logger {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(log: 0),
-            ipc_cmif_interface_make_command_meta!(set_destination: 1)
+            ipc_cmif_interface_make_command_meta!(set_destination: 1),
         ]
     }
 }
@@ -39,7 +36,7 @@ impl ILogger for Logger {
 }
 
 pub struct LogService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for LogService {
@@ -48,9 +45,7 @@ impl sf::IObject for LogService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(open_logger: 0)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(open_logger: 0)]
     }
 }
 

@@ -1,7 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
-use crate::util;
+use crate::{ipc::cmif::sf, mem, result::*, util};
 
 bit_enum! {
     FileOpenMode (u32) {
@@ -36,7 +33,7 @@ bit_enum! {
 #[repr(u8)]
 pub enum DirectoryEntryType {
     Directory = 0,
-    File = 1
+    File = 1,
 }
 
 pub type Path = util::CString<0x301>;

@@ -14,7 +14,7 @@ macro_rules! ipc_cmif_client_send_request_command {
                 }
             )*
             ctx.in_params.data_size = walker.get_offset() as u32;
-            
+
             $crate::ipc::cmif::client::write_request_command_on_ipc_buffer(&mut ctx, Some($rq_id), $crate::ipc::cmif::DomainCommandType::SendMessage);
 
             walker.reset_with(ctx.in_params.data_offset);
@@ -52,7 +52,7 @@ macro_rules! ipc_cmif_client_send_control_command {
                 }
             )*
             ctx.in_params.data_size = walker.get_offset() as u32;
-            
+
             $crate::ipc::cmif::client::write_control_command_on_ipc_buffer(&mut ctx, $control_rq_id);
 
             walker.reset_with(ctx.in_params.data_offset);

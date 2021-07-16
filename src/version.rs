@@ -1,21 +1,28 @@
 use crate::sync;
-use core::cmp;
-use core::fmt;
+use core::{cmp, fmt};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Version {
     pub major: u8,
     pub minor: u8,
-    pub micro: u8
+    pub micro: u8,
 }
 
 impl Version {
     pub const fn empty() -> Self {
-        Self { major: 0, minor: 0, micro: 0 }
+        Self {
+            major: 0,
+            minor: 0,
+            micro: 0,
+        }
     }
 
     pub const fn new(major: u8, minor: u8, micro: u8) -> Self {
-        Self { major: major, minor: minor, micro: micro }
+        Self {
+            major: major,
+            minor: minor,
+            micro: micro,
+        }
     }
 }
 
@@ -23,24 +30,19 @@ impl Ord for Version {
     fn cmp(&self, other: &Self) -> cmp::Ordering {
         if self.major < other.major {
             cmp::Ordering::Less
-        }
-        else if self.major == other.major {
+        } else if self.major == other.major {
             if self.minor < other.minor {
                 cmp::Ordering::Less
-            }
-            else if self.minor == other.minor {
+            } else if self.minor == other.minor {
                 if self.micro < other.micro {
                     cmp::Ordering::Less
-                }
-                else {
+                } else {
                     cmp::Ordering::Equal
                 }
-            }
-            else {
+            } else {
                 cmp::Ordering::Greater
             }
-        }
-        else {
+        } else {
             cmp::Ordering::Greater
         }
     }
@@ -67,7 +69,5 @@ pub(crate) fn set_version(version: Version) {
 }
 
 pub fn get_version() -> Version {
-    unsafe {
-        *G_VERSION.get()
-    }
+    unsafe { *G_VERSION.get() }
 }

@@ -1,8 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
-use crate::util;
-use crate::ipc::cmif::sf::applet;
+use crate::{
+    ipc::cmif::{sf, sf::applet},
+    mem,
+    result::*,
+    util,
+};
 
 pub type DisplayName = util::CString<0x40>;
 
@@ -21,7 +22,7 @@ pub type LayerId = u64;
 #[repr(u32)]
 pub enum DisplayServiceMode {
     User = 0,
-    Privileged = 1
+    Privileged = 1,
 }
 
 pub trait IManagerDisplayService {

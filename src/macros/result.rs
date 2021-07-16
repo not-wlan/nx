@@ -10,7 +10,7 @@ macro_rules! result_define {
                 fn get_module() -> u32 {
                     $module
                 }
-                
+
                 fn get_description() -> u32 {
                     $description
                 }
@@ -67,4 +67,3 @@ macro_rules! result_try {
         }
     };
 }
-

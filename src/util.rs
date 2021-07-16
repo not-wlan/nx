@@ -1,32 +1,30 @@
-use crate::result::*;
-use crate::results;
-use crate::thread;
-use crate::diag::assert;
-use crate::diag::log;
-use crate::diag::log::Logger;
+use crate::{
+    diag::{assert, log, log::Logger},
+    result::*,
+    results, thread,
+};
 use alloc::string::String;
-use core::str;
-use core::ptr;
-use core::fmt;
-use core::panic;
-use core::mem;
+use core::{fmt, mem, panic, ptr, str};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 #[repr(C)]
 pub struct Uuid {
-    pub uuid: [u8; 0x10]
+    pub uuid: [u8; 0x10],
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(C)]
 pub struct PointerAndSize {
     pub address: *mut u8,
-    pub size: usize
+    pub size: usize,
 }
 
 impl PointerAndSize {
     pub const fn new(address: *mut u8, size: usize) -> Self {
-        Self { address: address, size: size }
+        Self {
+            address: address,
+            size: size,
+        }
     }
 
     pub fn is_valid(&self) -> bool {
@@ -37,14 +35,14 @@ impl PointerAndSize {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CString<const S: usize> {
-    pub c_str: [u8; S]
+    pub c_str: [u8; S],
 }
 
 impl<const S: usize> fmt::Debug for CString<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str_data = match self.get_str() {
             Ok(got_str) => got_str,
-            Err(_) => "<empty>"
+            Err(_) => "<empty>",
         };
         write!(f, "{}", str_data)
     }
@@ -90,31 +88,39 @@ impl<const S: usize> CString<S> {
         unsafe {
             ptr::write_bytes(ptr, 0, ptr_len);
             if !string.is_empty() {
-                ptr::copy(string.as_ptr(), ptr, core::cmp::min(ptr_len - 1, string.len()));
+                ptr::copy(
+                    string.as_ptr(),
+                    ptr,
+                    core::cmp::min(ptr_len - 1, string.len()),
+                );
             }
         }
         Ok(())
     }
-    
+
     fn copy_string_to(string: String, ptr: *mut u8, ptr_len: usize) -> Result<()> {
         unsafe {
             ptr::write_bytes(ptr, 0, ptr_len);
             if !string.is_empty() {
-                ptr::copy(string.as_ptr(), ptr, core::cmp::min(ptr_len - 1, string.len()));
+                ptr::copy(
+                    string.as_ptr(),
+                    ptr,
+                    core::cmp::min(ptr_len - 1, string.len()),
+                );
             }
         }
         Ok(())
     }
-    
+
     fn read_str_from(ptr: *const u8, ptr_len: usize) -> Result<&'static str> {
         unsafe {
             match core::str::from_utf8(core::slice::from_raw_parts(ptr, ptr_len)) {
                 Ok(name) => Ok(name.trim_matches('\0')),
-                Err(_) => Err(results::lib::util::ResultInvalidConversion::make())
+                Err(_) => Err(results::lib::util::ResultInvalidConversion::make()),
             }
         }
     }
-    
+
     fn read_string_from(ptr: *const u8, ptr_len: usize) -> Result<String> {
         Ok(String::from(Self::read_str_from(ptr, ptr_len)?))
     }
@@ -139,15 +145,14 @@ impl<const S: usize> CString<S> {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct CString16<const S: usize> {
-    pub c_str: [u16; S]
+    pub c_str: [u16; S],
 }
 
 impl<const S: usize> fmt::Debug for CString16<S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Ok(string) = self.get_string() {
             write!(f, "{}", string)
-        }
-        else {
+        } else {
             write!(f, "<null>")
         }
     }
@@ -206,7 +211,7 @@ impl<const S: usize> CString16<S> {
         }
         Ok(())
     }
-    
+
     fn read_string_from(ptr: *const u16, ptr_len: usize) -> Result<String> {
         let mut string = String::new();
         unsafe {
@@ -217,8 +222,7 @@ impl<const S: usize> CString16<S> {
                         break;
                     }
                     string.push(ch);
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -239,13 +243,19 @@ impl<const S: usize> CString16<S> {
     }
 }
 
-pub fn simple_panic_handler<L: Logger>(info: &panic::PanicInfo, assert_mode: assert::AssertMode) -> ! {
+pub fn simple_panic_handler<L: Logger>(
+    info: &panic::PanicInfo,
+    assert_mode: assert::AssertMode,
+) -> ! {
     let thread_name = match thread::get_current_thread().name.get_str() {
         Ok(name) => name,
         _ => "<unknown>",
     };
     diag_log!(L { log::LogSeverity::Fatal, true } => "Panic! at thread '{}' -> {}\n", thread_name, info);
 
-    assert::assert(assert_mode, results::lib::assert::ResultAssertionFailed::make());
+    assert::assert(
+        assert_mode,
+        results::lib::assert::ResultAssertionFailed::make(),
+    );
     loop {}
 }

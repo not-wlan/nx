@@ -19,7 +19,7 @@ pub enum AbiConfigEntryKey {
     LastLoadResult = 11,
     RandomSeed = 14,
     UserIdStorage = 15,
-    HosVersion = 16
+    HosVersion = 16,
 }
 
 bit_enum! {
@@ -45,14 +45,14 @@ pub struct AbiConfigEntry {
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 #[repr(C)]
 pub struct Version {
-    value: u32
+    value: u32,
 }
 
 impl Version {
     pub const fn empty() -> Self {
         Self { value: 0 }
     }
-    
+
     pub const fn new(value: u32) -> Self {
         Self { value: value }
     }

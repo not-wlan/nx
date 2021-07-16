@@ -1,11 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
+use crate::{ipc::cmif::sf, result::*, service};
 
 pub use crate::ipc::cmif::sf::pm::*;
 
 pub struct InformationInterface {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for InformationInterface {
@@ -14,9 +12,7 @@ impl sf::IObject for InformationInterface {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_program_id: 0)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_program_id: 0)]
     }
 }
 
@@ -47,7 +43,7 @@ impl service::cmif::IService for InformationInterface {
 }
 
 pub struct DebugMonitorInterface {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for DebugMonitorInterface {
@@ -56,9 +52,7 @@ impl sf::IObject for DebugMonitorInterface {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_application_process_id: 5)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_application_process_id: 5)]
     }
 }
 

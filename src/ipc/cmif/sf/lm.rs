@@ -1,6 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*};
 
 bit_enum! {
     LogDestination (u32) {

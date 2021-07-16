@@ -14,7 +14,7 @@ macro_rules! ipc_tipc_client_send_request_command {
                 }
             )*
             ctx.in_params.data_size = walker.get_offset() as u32;
-            
+
             $crate::ipc::tipc::client::write_request_command_on_ipc_buffer(&mut ctx, $rq_id);
 
             walker.reset_with(ctx.in_params.data_offset);
@@ -52,7 +52,7 @@ macro_rules! ipc_tipc_client_send_request_command_dummy {
                 }
             )*
             ctx.in_params.data_size = walker.get_offset() as u32;
-            
+
             $crate::ipc::tipc::client::write_request_command_on_ipc_buffer(&mut ctx, $rq_id);
 
             walker.reset_with(ctx.in_params.data_offset);

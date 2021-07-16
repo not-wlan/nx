@@ -1,5 +1,4 @@
-use crate::svc;
-use crate::thread;
+use crate::{svc, thread};
 
 pub struct Mutex {
     value: u32,
@@ -38,7 +37,7 @@ fn clear_exclusive() {
 
 fn lock_impl(handle_ref: *mut u32) {
     let thr_handle = get_current_thread_handle();
-    
+
     let mut value = load_exclusive(handle_ref);
     loop {
         if value == 0 {
@@ -68,7 +67,7 @@ fn lock_impl(handle_ref: *mut u32) {
 
 fn unlock_impl(handle_ref: *mut u32) {
     let thr_handle = get_current_thread_handle();
-    
+
     let mut value = load_exclusive(handle_ref);
     loop {
         if value != thr_handle {
@@ -106,7 +105,12 @@ fn try_lock_impl(handle_ref: *mut u32) -> bool {
 
 impl Mutex {
     pub const fn new(recursive: bool) -> Self {
-        Self { value: 0, is_recursive: recursive, counter: 0, thread_handle: 0 }
+        Self {
+            value: 0,
+            is_recursive: recursive,
+            counter: 0,
+            thread_handle: 0,
+        }
     }
 
     pub fn lock(&mut self) {
@@ -153,8 +157,7 @@ impl Mutex {
             }
             self.counter += 1;
             true
-        }
-        else {
+        } else {
             try_lock_impl(&mut self.value)
         }
     }
@@ -184,7 +187,10 @@ pub struct Locked<T> {
 
 impl<T> Locked<T> {
     pub const fn new(recursive: bool, t: T) -> Self {
-        Self { lock: Mutex::new(recursive), object: t }
+        Self {
+            lock: Mutex::new(recursive),
+            object: t,
+        }
     }
 
     pub fn get(&mut self) -> &mut T {

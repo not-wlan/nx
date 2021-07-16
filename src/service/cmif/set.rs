@@ -1,11 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
+use crate::{ipc::cmif::sf, result::*, service};
 
 pub use crate::ipc::cmif::sf::set::*;
 
 pub struct SystemSettingsServer {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for SystemSettingsServer {
@@ -14,9 +12,7 @@ impl sf::IObject for SystemSettingsServer {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_firmware_version: 3)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_firmware_version: 3)]
     }
 }
 
@@ -27,7 +23,10 @@ impl service::cmif::IClientObject for SystemSettingsServer {
 }
 
 impl ISystemSettingsServer for SystemSettingsServer {
-    fn get_firmware_version(&mut self, out_version: sf::OutFixedPointerBuffer<FirmwareVersion>) -> Result<()> {
+    fn get_firmware_version(
+        &mut self,
+        out_version: sf::OutFixedPointerBuffer<FirmwareVersion>,
+    ) -> Result<()> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 3] (out_version) => ())
     }
 }

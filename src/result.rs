@@ -1,5 +1,4 @@
-use core::result;
-use core::fmt;
+use core::{fmt, result};
 
 const MODULE_BITS: u32 = 9;
 const DESCRIPTION_BITS: u32 = 13;
@@ -38,30 +37,30 @@ pub trait ResultBase {
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
 #[repr(C)]
 pub struct ResultCode {
-    value: u32
+    value: u32,
 }
 
 impl ResultCode {
     pub const fn new(value: u32) -> Self {
         Self { value: value }
     }
-    
+
     pub const fn is_success(&self) -> bool {
         self.value == SUCCESS_VALUE
     }
-    
+
     pub const fn is_failure(&self) -> bool {
         !self.is_success()
     }
-    
+
     pub const fn get_value(&self) -> u32 {
         self.value
     }
-    
+
     pub const fn get_module(&self) -> u32 {
         unpack_module(self.value)
     }
-    
+
     pub const fn get_description(&self) -> u32 {
         unpack_description(self.value)
     }
@@ -75,7 +74,12 @@ impl fmt::Debug for ResultCode {
 
 impl fmt::Display for ResultCode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
-        write!(fmt, "{:0>4}-{:0>4}", 2000 + self.get_module(), self.get_description())
+        write!(
+            fmt,
+            "{:0>4}-{:0>4}",
+            2000 + self.get_module(),
+            self.get_description()
+        )
     }
 }
 
@@ -86,8 +90,7 @@ pub type Result<T> = result::Result<T, ResultCode>;
 pub fn wrap<T>(rc: ResultCode, value: T) -> Result<T> {
     if rc.is_success() {
         Ok(value)
-    }
-    else {
+    } else {
         Err(rc)
     }
 }

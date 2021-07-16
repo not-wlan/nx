@@ -1,12 +1,9 @@
-use crate::result::*;
-use crate::sync;
-use crate::svc;
-use crate::mem;
+use crate::{mem, result::*, svc, sync};
 
 #[derive(Copy, Clone)]
 pub struct VirtualRegion {
     pub start: usize,
-    pub end: usize
+    pub end: usize,
 }
 
 impl VirtualRegion {
@@ -22,7 +19,7 @@ impl VirtualRegion {
 pub enum VirtualRegionType {
     Stack,
     Heap,
-    LegacyAlias
+    LegacyAlias,
 }
 
 static mut G_STACK_REGION: VirtualRegion = VirtualRegion::new();
@@ -60,7 +57,11 @@ pub fn get_legacy_alias_region() -> VirtualRegion {
     }
 }
 
-fn read_region_info(region: &mut VirtualRegion, address_info_id: svc::InfoId, size_info_id: svc::InfoId) -> Result<()> {
+fn read_region_info(
+    region: &mut VirtualRegion,
+    address_info_id: svc::InfoId,
+    size_info_id: svc::InfoId,
+) -> Result<()> {
     let address = svc::get_info(address_info_id, svc::CURRENT_PROCESS_PSEUDO_HANDLE, 0)? as usize;
     let size = svc::get_info(size_info_id, svc::CURRENT_PROCESS_PSEUDO_HANDLE, 0)? as usize;
 
@@ -72,10 +73,26 @@ fn read_region_info(region: &mut VirtualRegion, address_info_id: svc::InfoId, si
 pub fn initialize() -> Result<()> {
     unsafe {
         let _ = sync::ScopedLock::new(&mut G_LOCK);
-        read_region_info(&mut G_ADDRESS_SPACE, svc::InfoId::AslrRegionAddress, svc::InfoId::AslrRegionSize)?;
-        read_region_info(&mut G_STACK_REGION, svc::InfoId::StackRegionAddress, svc::InfoId::StackRegionSize)?;
-        read_region_info(&mut G_HEAP_REGION, svc::InfoId::HeapRegionAddress, svc::InfoId::HeapRegionSize)?;
-        read_region_info(&mut G_LEGACY_ALIAS_REGION, svc::InfoId::AliasRegionAddress, svc::InfoId::AliasRegionSize)?;
+        read_region_info(
+            &mut G_ADDRESS_SPACE,
+            svc::InfoId::AslrRegionAddress,
+            svc::InfoId::AslrRegionSize,
+        )?;
+        read_region_info(
+            &mut G_STACK_REGION,
+            svc::InfoId::StackRegionAddress,
+            svc::InfoId::StackRegionSize,
+        )?;
+        read_region_info(
+            &mut G_HEAP_REGION,
+            svc::InfoId::HeapRegionAddress,
+            svc::InfoId::HeapRegionSize,
+        )?;
+        read_region_info(
+            &mut G_LEGACY_ALIAS_REGION,
+            svc::InfoId::AliasRegionAddress,
+            svc::InfoId::AliasRegionSize,
+        )?;
     }
     Ok(())
 }

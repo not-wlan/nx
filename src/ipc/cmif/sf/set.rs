@@ -1,6 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::util;
+use crate::{ipc::cmif::sf, result::*, util};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 #[repr(C)]
@@ -16,7 +14,7 @@ pub struct FirmwareVersion {
     pub platform: util::CString<0x20>,
     pub version_hash: util::CString<0x40>,
     pub display_version: util::CString<0x18>,
-    pub display_title: util::CString<0x80>
+    pub display_title: util::CString<0x80>,
 }
 
 pub trait ISystemSettingsServer {

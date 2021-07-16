@@ -13,12 +13,12 @@ macro_rules! bit_enum {
         #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
         #[repr(C)]
         pub struct $name($base);
-        
+
         impl $name {
             pub const fn from(val: $base) -> Self {
                 Self(val)
             }
-            
+
             pub const fn contains(self, other: Self) -> bool {
                 (self.0 & other.0) != 0
             }
@@ -26,17 +26,17 @@ macro_rules! bit_enum {
             pub const fn get(self) -> $base {
                 self.0
             }
-        
+
             $(
                 pub const fn $entry_name() -> Self {
                     Self($entry_value)
                 }
             )*
         }
-        
+
         impl const core::ops::BitOr for $name {
             type Output = Self;
-        
+
             #[inline]
             fn bitor(self, other: Self) -> Self {
                 Self(self.0 | other.0)
@@ -45,7 +45,7 @@ macro_rules! bit_enum {
 
         impl const core::ops::BitAnd for $name {
             type Output = Self;
-        
+
             #[inline]
             fn bitand(self, other: Self) -> Self {
                 Self(self.0 & other.0)
@@ -58,7 +58,7 @@ macro_rules! bit_enum {
                 self.0 |= other.0
             }
         }
-        
+
         impl core::ops::BitAndAssign for $name {
             #[inline]
             fn bitand_assign(&mut self, other: Self) {
@@ -81,7 +81,7 @@ macro_rules! util_return_if {
         if $cond {
             return $ret;
         }
-    }
+    };
 }
 
 #[macro_export]
@@ -90,13 +90,13 @@ macro_rules! util_return_unless {
         if !$cond {
             return $ret;
         }
-    }
+    };
 }
 
 #[macro_export]
 macro_rules! write_bits {
     ($start:expr, $end:expr, $value:expr, $data:expr) => {
-        $value = ($value & (!( ((1 << ($end - $start + 1)) - 1) << $start ))) | ($data << $start);
+        $value = ($value & (!(((1 << ($end - $start + 1)) - 1) << $start))) | ($data << $start);
     };
 }
 

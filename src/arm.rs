@@ -1,7 +1,7 @@
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 #[repr(C)]
 pub struct CpuRegister {
-    pub reg: u64
+    pub reg: u64,
 }
 
 impl CpuRegister {
@@ -33,7 +33,7 @@ impl CpuRegister {
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 #[repr(C)]
 pub struct FpuRegister {
-    pub reg: u128
+    pub reg: u128,
 }
 
 impl FpuRegister {
@@ -83,7 +83,7 @@ pub struct ThreadContext {
     pub fpu_gprs: [FpuRegister; 32],
     pub fpcr: u32,
     pub fpsr: u32,
-    pub tpidr: u64
+    pub tpidr: u64,
 }
 
 pub fn cache_flush(address: *mut u8, size: usize) {

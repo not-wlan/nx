@@ -1,12 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*, service};
 
 pub use crate::ipc::cmif::sf::mii::*;
 
 pub struct DatabaseService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for DatabaseService {
@@ -15,12 +12,12 @@ impl sf::IObject for DatabaseService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(is_updated: 0),
             ipc_cmif_interface_make_command_meta!(is_full: 1),
             ipc_cmif_interface_make_command_meta!(get_count: 2),
             ipc_cmif_interface_make_command_meta!(get_1: 4),
-            ipc_cmif_interface_make_command_meta!(build_random: 6)
+            ipc_cmif_interface_make_command_meta!(build_random: 6),
         ]
     }
 }
@@ -48,13 +45,18 @@ impl IDatabaseService for DatabaseService {
         ipc_cmif_client_send_request_command!([self.session.object_info; 4] (flag, out_char_infos) => (count: u32))
     }
 
-    fn build_random(&mut self, age: Age, gender: Gender, face_color: FaceColor) -> Result<CharInfo> {
+    fn build_random(
+        &mut self,
+        age: Age,
+        gender: Gender,
+        face_color: FaceColor,
+    ) -> Result<CharInfo> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 6] (age, gender, face_color) => (char_info: CharInfo))
     }
 }
 
 pub struct StaticService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for StaticService {
@@ -63,9 +65,7 @@ impl sf::IObject for StaticService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_database_service: 0)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_database_service: 0)]
     }
 }
 
@@ -76,7 +76,10 @@ impl service::cmif::IClientObject for StaticService {
 }
 
 impl IStaticService for StaticService {
-    fn get_database_service(&mut self, key_code: SpecialKeyCode) -> Result<mem::Shared<dyn sf::IObject>> {
+    fn get_database_service(
+        &mut self,
+        key_code: SpecialKeyCode,
+    ) -> Result<mem::Shared<dyn sf::IObject>> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 0] (key_code) => (database_service: mem::Shared<DatabaseService>))
     }
 }

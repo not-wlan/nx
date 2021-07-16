@@ -1,6 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*};
 
 bit_enum! {
     NpadStyleTag (u32) {
@@ -18,7 +16,7 @@ bit_enum! {
 #[repr(i64)]
 pub enum NpadJoyDeviceType {
     Left,
-    Right
+    Right,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -32,7 +30,7 @@ pub enum ControllerId {
     Player6 = 5,
     Player7 = 6,
     Player8 = 7,
-    Handheld = 0x20
+    Handheld = 0x20,
 }
 
 pub trait IAppletResource {

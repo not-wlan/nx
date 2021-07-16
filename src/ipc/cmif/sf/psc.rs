@@ -1,11 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum ModuleId {
-    Lm = 41
+    Lm = 41,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -16,7 +14,7 @@ pub enum State {
     ReadySleep,
     ReadySleepCritical,
     ReadyAwakenCritical,
-    ReadyShutdown
+    ReadyShutdown,
 }
 
 pub trait IPmModule {

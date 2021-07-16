@@ -1,14 +1,15 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
-use crate::mem;
-use crate::service::cmif::dispdrv;
-use crate::service::cmif::applet;
+use crate::{
+    ipc::cmif::sf,
+    mem,
+    result::*,
+    service,
+    service::cmif::{applet, dispdrv},
+};
 
 pub use crate::ipc::cmif::sf::vi::*;
 
 pub struct ManagerDisplayService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for ManagerDisplayService {
@@ -17,9 +18,9 @@ impl sf::IObject for ManagerDisplayService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(create_managed_layer: 2010),
-            ipc_cmif_interface_make_command_meta!(destroy_managed_layer: 2011)
+            ipc_cmif_interface_make_command_meta!(destroy_managed_layer: 2011),
         ]
     }
 }
@@ -31,7 +32,12 @@ impl service::cmif::IClientObject for ManagerDisplayService {
 }
 
 impl IManagerDisplayService for ManagerDisplayService {
-    fn create_managed_layer(&mut self, flags: LayerFlags, display_id: DisplayId, aruid: applet::AppletResourceUserId) -> Result<LayerId> {
+    fn create_managed_layer(
+        &mut self,
+        flags: LayerFlags,
+        display_id: DisplayId,
+        aruid: applet::AppletResourceUserId,
+    ) -> Result<LayerId> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 2010] (flags, display_id, aruid) => (id: LayerId))
     }
 
@@ -41,7 +47,7 @@ impl IManagerDisplayService for ManagerDisplayService {
 }
 
 pub struct SystemDisplayService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for SystemDisplayService {
@@ -50,13 +56,13 @@ impl sf::IObject for SystemDisplayService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(get_z_order_count_min: 1200),
             ipc_cmif_interface_make_command_meta!(get_z_order_count_max: 1202),
             ipc_cmif_interface_make_command_meta!(set_layer_position: 2201),
             ipc_cmif_interface_make_command_meta!(set_layer_size: 2203),
             ipc_cmif_interface_make_command_meta!(set_layer_z: 2205),
-            ipc_cmif_interface_make_command_meta!(set_layer_visibility: 2207)
+            ipc_cmif_interface_make_command_meta!(set_layer_visibility: 2207),
         ]
     }
 }
@@ -94,7 +100,7 @@ impl ISystemDisplayService for SystemDisplayService {
 }
 
 pub struct ApplicationDisplayService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for ApplicationDisplayService {
@@ -103,7 +109,7 @@ impl sf::IObject for ApplicationDisplayService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(get_relay_service: 100),
             ipc_cmif_interface_make_command_meta!(get_system_display_service: 101),
             ipc_cmif_interface_make_command_meta!(get_manager_display_service: 102),
@@ -112,7 +118,7 @@ impl sf::IObject for ApplicationDisplayService {
             ipc_cmif_interface_make_command_meta!(open_layer: 2020),
             ipc_cmif_interface_make_command_meta!(create_stray_layer: 2030),
             ipc_cmif_interface_make_command_meta!(destroy_stray_layer: 2031),
-            ipc_cmif_interface_make_command_meta!(get_display_vsync_event: 5202)
+            ipc_cmif_interface_make_command_meta!(get_display_vsync_event: 5202),
         ]
     }
 }
@@ -144,11 +150,22 @@ impl IApplicationDisplayService for ApplicationDisplayService {
         ipc_cmif_client_send_request_command!([self.session.object_info; 1020] (display_id) => ())
     }
 
-    fn open_layer(&mut self, name: DisplayName, id: LayerId, aruid: sf::ProcessId, out_native_window: sf::OutMapAliasBuffer) -> Result<usize> {
+    fn open_layer(
+        &mut self,
+        name: DisplayName,
+        id: LayerId,
+        aruid: sf::ProcessId,
+        out_native_window: sf::OutMapAliasBuffer,
+    ) -> Result<usize> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 2020] (name, id, aruid, out_native_window) => (native_window_size: usize))
     }
 
-    fn create_stray_layer(&mut self, flags: LayerFlags, display_id: DisplayId, out_native_window: sf::OutMapAliasBuffer) -> Result<(LayerId, usize)> {
+    fn create_stray_layer(
+        &mut self,
+        flags: LayerFlags,
+        display_id: DisplayId,
+        out_native_window: sf::OutMapAliasBuffer,
+    ) -> Result<(LayerId, usize)> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 2030] (flags, display_id, out_native_window) => (id: LayerId, native_window_size: usize))
     }
 
@@ -162,7 +179,7 @@ impl IApplicationDisplayService for ApplicationDisplayService {
 }
 
 pub struct SystemRootService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for SystemRootService {
@@ -171,9 +188,7 @@ impl sf::IObject for SystemRootService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_display_service: 1)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_display_service: 1)]
     }
 }
 
@@ -184,7 +199,10 @@ impl service::cmif::IClientObject for SystemRootService {
 }
 
 impl IRootService for SystemRootService {
-    fn get_display_service(&mut self, mode: DisplayServiceMode) -> Result<mem::Shared<dyn sf::IObject>> {
+    fn get_display_service(
+        &mut self,
+        mode: DisplayServiceMode,
+    ) -> Result<mem::Shared<dyn sf::IObject>> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 1] (mode) => (display_service: mem::Shared<ApplicationDisplayService>))
     }
 }
@@ -204,7 +222,7 @@ impl service::cmif::IService for SystemRootService {
 }
 
 pub struct ManagerRootService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for ManagerRootService {
@@ -213,9 +231,7 @@ impl sf::IObject for ManagerRootService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_display_service: 2)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_display_service: 2)]
     }
 }
 
@@ -226,7 +242,10 @@ impl service::cmif::IClientObject for ManagerRootService {
 }
 
 impl IRootService for ManagerRootService {
-    fn get_display_service(&mut self, mode: DisplayServiceMode) -> Result<mem::Shared<dyn sf::IObject>> {
+    fn get_display_service(
+        &mut self,
+        mode: DisplayServiceMode,
+    ) -> Result<mem::Shared<dyn sf::IObject>> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 2] (mode) => (display_service: mem::Shared<ApplicationDisplayService>))
     }
 }

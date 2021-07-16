@@ -1,33 +1,44 @@
 use super::*;
-use crate::svc;
-use crate::ipc::tipc::client;
-use crate::ipc::tipc::server;
-use crate::version;
+use crate::{
+    ipc::tipc::{client, server},
+    svc, version,
+};
+use alloc::{string::String, vec::Vec};
 use core::mem;
-use alloc::vec::Vec;
-use alloc::string::String;
 
 #[derive(Copy, Clone)]
 pub struct Buffer<const A: BufferAttribute, const S: usize> {
     pub buf: *const u8,
-    pub size: usize
+    pub size: usize,
 }
 
 impl<const A: BufferAttribute, const S: usize> Buffer<A, S> {
     pub const fn new() -> Self {
-        Self { buf: ptr::null_mut(), size: 0 }
+        Self {
+            buf: ptr::null_mut(),
+            size: 0,
+        }
     }
 
     pub const fn from_other<const B: BufferAttribute, const Z: usize>(other: Buffer<B, Z>) -> Self {
-        Self { buf: other.buf, size: other.size }
+        Self {
+            buf: other.buf,
+            size: other.size,
+        }
     }
-    
+
     pub const fn from_const<T>(buf: *const T, size: usize) -> Self {
-        Self { buf: buf as *const u8, size: size }
+        Self {
+            buf: buf as *const u8,
+            size: size,
+        }
     }
 
     pub const fn from_mut<T>(buf: *mut T, size: usize) -> Self {
-        Self { buf: buf as *const u8, size: size }
+        Self {
+            buf: buf as *const u8,
+            size: size,
+        }
     }
 
     pub const fn from_var<T>(var: &T) -> Self {
@@ -39,15 +50,11 @@ impl<const A: BufferAttribute, const S: usize> Buffer<A, S> {
     }
 
     pub const fn get_as<T>(&self) -> &T {
-        unsafe {
-            &*(self.buf as *const T)
-        }
+        unsafe { &*(self.buf as *const T) }
     }
 
     pub fn get_mut_as<T>(&self) -> &mut T {
-        unsafe {
-            &mut *(self.buf as *mut T)
-        }
+        unsafe { &mut *(self.buf as *mut T) }
     }
 
     pub fn set_as<T>(&mut self, t: T) {
@@ -86,19 +93,43 @@ impl<const A: BufferAttribute, const S: usize> Buffer<A, S> {
         unsafe {
             // First memset to zero so that it will be a valid nul-terminated string
             core::ptr::write_bytes(self.buf as *mut u8, 0, self.size);
-            core::ptr::copy(string.as_ptr(), self.buf as *mut u8, core::cmp::min(self.size - 1, string.len()));
+            core::ptr::copy(
+                string.as_ptr(),
+                self.buf as *mut u8,
+                core::cmp::min(self.size - 1, string.len()),
+            );
         }
     }
 }
 
-pub type InMapAliasBuffer = Buffer<{bit_group!{ BufferAttribute [In, MapAlias] }}, 0>;
-pub type OutMapAliasBuffer = Buffer<{bit_group!{ BufferAttribute [Out, MapAlias] }}, 0>;
-pub type InNonSecureMapAliasBuffer = Buffer<{bit_group!{ BufferAttribute [In, MapAlias, MapTransferAllowsNonSecure] }}, 0>;
-pub type OutNonSecureMapAliasBuffer = Buffer<{bit_group!{ BufferAttribute [Out, MapAlias, MapTransferAllowsNonSecure] }}, 0>;
+pub type InMapAliasBuffer = Buffer<
+    {
+        bit_group! { BufferAttribute [In, MapAlias] }
+    },
+    0,
+>;
+pub type OutMapAliasBuffer = Buffer<
+    {
+        bit_group! { BufferAttribute [Out, MapAlias] }
+    },
+    0,
+>;
+pub type InNonSecureMapAliasBuffer = Buffer<
+    {
+        bit_group! { BufferAttribute [In, MapAlias, MapTransferAllowsNonSecure] }
+    },
+    0,
+>;
+pub type OutNonSecureMapAliasBuffer = Buffer<
+    {
+        bit_group! { BufferAttribute [Out, MapAlias, MapTransferAllowsNonSecure] }
+    },
+    0,
+>;
 
 #[derive(Copy, Clone)]
 pub struct Handle<const M: HandleMode> {
-    pub handle: svc::Handle
+    pub handle: svc::Handle,
 }
 
 impl<const M: HandleMode> Handle<M> {
@@ -107,17 +138,19 @@ impl<const M: HandleMode> Handle<M> {
     }
 }
 
-pub type CopyHandle = Handle<{HandleMode::Copy}>;
-pub type MoveHandle = Handle<{HandleMode::Move}>;
+pub type CopyHandle = Handle<{ HandleMode::Copy }>;
+pub type MoveHandle = Handle<{ HandleMode::Move }>;
 
 #[derive(Copy, Clone)]
 pub struct ProcessId {
-    pub process_id: u64
+    pub process_id: u64,
 }
 
 impl ProcessId {
     pub const fn from(process_id: u64) -> Self {
-        Self { process_id: process_id }
+        Self {
+            process_id: process_id,
+        }
     }
 
     pub const fn new() -> ProcessId {
@@ -126,18 +159,22 @@ impl ProcessId {
 }
 
 pub struct Session {
-    pub object_info: ObjectInfo
+    pub object_info: ObjectInfo,
 }
 
 impl Session {
-    pub const fn new() -> Self  {
-        Self { object_info: ObjectInfo::new() }
+    pub const fn new() -> Self {
+        Self {
+            object_info: ObjectInfo::new(),
+        }
     }
 
     pub const fn from(object_info: ObjectInfo) -> Self {
-        Self { object_info: object_info }
+        Self {
+            object_info: object_info,
+        }
     }
-    
+
     pub const fn from_handle(handle: svc::Handle) -> Self {
         Self::from(ObjectInfo::from_handle(handle))
     }
@@ -176,14 +213,24 @@ pub struct CommandMetadata {
     pub rq_id: u32,
     pub command_fn: CommandFn,
     pub min_ver: Option<version::Version>,
-    pub max_ver: Option<version::Version>
+    pub max_ver: Option<version::Version>,
 }
 
 pub type CommandMetadataTable = Vec<CommandMetadata>;
 
 impl CommandMetadata {
-    pub fn new(rq_id: u32, command_fn: CommandFn, min_ver: Option<version::Version>, max_ver: Option<version::Version>) -> Self {
-        Self { rq_id: rq_id, command_fn: command_fn, min_ver: min_ver, max_ver: max_ver }
+    pub fn new(
+        rq_id: u32,
+        command_fn: CommandFn,
+        min_ver: Option<version::Version>,
+        max_ver: Option<version::Version>,
+    ) -> Self {
+        Self {
+            rq_id: rq_id,
+            command_fn: command_fn,
+            min_ver: min_ver,
+            max_ver: max_ver,
+        }
     }
 
     pub fn validate_version(&self) -> bool {
@@ -206,8 +253,9 @@ impl CommandMetadata {
     }
 }
 
-// This trait is analogous to N's IServiceObject type - the base for any kind of IPC interface
-// IClientObject (on service module) and IServerObject (on server module) are wrappers for some specific kind of objects
+// This trait is analogous to N's IServiceObject type - the base for any kind of
+// IPC interface IClientObject (on service module) and IServerObject (on server
+// module) are wrappers for some specific kind of objects
 
 pub trait IObject {
     fn get_session(&mut self) -> &mut Session;
@@ -229,7 +277,11 @@ pub trait IObject {
         self.get_info().is_valid()
     }
 
-    fn call_self_command(&mut self, command_fn: CommandFn, ctx: &mut server::ServerContext) -> Result<()> {
+    fn call_self_command(
+        &mut self,
+        command_fn: CommandFn,
+        ctx: &mut server::ServerContext,
+    ) -> Result<()> {
         let original_fn: CommandSpecificFn<Self> = unsafe { mem::transmute(command_fn) };
         (original_fn)(self, ctx)
     }

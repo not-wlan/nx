@@ -1,11 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
+use crate::{ipc::cmif::sf, result::*, service};
 
 pub use crate::ipc::cmif::sf::fatal::*;
 
 pub struct Service {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for Service {
@@ -14,9 +12,7 @@ impl sf::IObject for Service {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(throw_with_policy: 1)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(throw_with_policy: 1)]
     }
 }
 
@@ -27,7 +23,12 @@ impl service::cmif::IClientObject for Service {
 }
 
 impl IService for Service {
-    fn throw_with_policy(&mut self, rc: ResultCode, policy: Policy, process_id: sf::ProcessId) -> Result<()> {
+    fn throw_with_policy(
+        &mut self,
+        rc: ResultCode,
+        policy: Policy,
+        process_id: sf::ProcessId,
+    ) -> Result<()> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 1] (rc, policy, process_id) => ())
     }
 }

@@ -1,12 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*, service};
 
 pub use crate::ipc::cmif::sf::fspsrv::*;
 
 pub struct File {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for File {
@@ -15,10 +12,10 @@ impl sf::IObject for File {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(read: 0),
             ipc_cmif_interface_make_command_meta!(write: 1),
-            ipc_cmif_interface_make_command_meta!(get_size: 4)
+            ipc_cmif_interface_make_command_meta!(get_size: 4),
         ]
     }
 }
@@ -30,11 +27,23 @@ impl service::cmif::IClientObject for File {
 }
 
 impl IFile for File {
-    fn read(&mut self, option: FileReadOption, offset: usize, size: usize, buf: sf::OutNonSecureMapAliasBuffer) -> Result<usize> {
+    fn read(
+        &mut self,
+        option: FileReadOption,
+        offset: usize,
+        size: usize,
+        buf: sf::OutNonSecureMapAliasBuffer,
+    ) -> Result<usize> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 0] (option, offset, size, buf) => (read_size: usize))
     }
 
-    fn write(&mut self, option: FileWriteOption, offset: usize, size: usize, buf: sf::InNonSecureMapAliasBuffer) -> Result<()> {
+    fn write(
+        &mut self,
+        option: FileWriteOption,
+        offset: usize,
+        size: usize,
+        buf: sf::InNonSecureMapAliasBuffer,
+    ) -> Result<()> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 1] (option, offset, size, buf) => ())
     }
 
@@ -44,7 +53,7 @@ impl IFile for File {
 }
 
 pub struct FileSystem {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for FileSystem {
@@ -53,13 +62,13 @@ impl sf::IObject for FileSystem {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(create_file: 0),
             ipc_cmif_interface_make_command_meta!(delete_file: 1),
             ipc_cmif_interface_make_command_meta!(create_directory: 2),
             ipc_cmif_interface_make_command_meta!(delete_directory: 3),
             ipc_cmif_interface_make_command_meta!(delete_directory_recursively: 4),
-            ipc_cmif_interface_make_command_meta!(open_file: 8)
+            ipc_cmif_interface_make_command_meta!(open_file: 8),
         ]
     }
 }
@@ -71,7 +80,12 @@ impl service::cmif::IClientObject for FileSystem {
 }
 
 impl IFileSystem for FileSystem {
-    fn create_file(&mut self, attribute: FileAttribute, size: usize, path_buf: sf::InPointerBuffer) -> Result<()> {
+    fn create_file(
+        &mut self,
+        attribute: FileAttribute,
+        size: usize,
+        path_buf: sf::InPointerBuffer,
+    ) -> Result<()> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 0] (attribute, size, path_buf) => ())
     }
 
@@ -82,7 +96,7 @@ impl IFileSystem for FileSystem {
     fn create_directory(&mut self, path_buf: sf::InPointerBuffer) -> Result<()> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 2] (path_buf) => ())
     }
-    
+
     fn delete_directory(&mut self, path_buf: sf::InPointerBuffer) -> Result<()> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 3] (path_buf) => ())
     }
@@ -94,14 +108,18 @@ impl IFileSystem for FileSystem {
     fn get_entry_type(&mut self, path_buf: sf::InPointerBuffer) -> Result<DirectoryEntryType> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 7] (path_buf) => (entry_type: DirectoryEntryType))
     }
-    
-    fn open_file(&mut self, mode: FileOpenMode, path_buf: sf::InPointerBuffer) -> Result<mem::Shared<dyn sf::IObject>> {
+
+    fn open_file(
+        &mut self,
+        mode: FileOpenMode,
+        path_buf: sf::InPointerBuffer,
+    ) -> Result<mem::Shared<dyn sf::IObject>> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 8] (mode, path_buf) => (file: mem::Shared<File>))
     }
 }
 
 pub struct FileSystemProxy {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for FileSystemProxy {
@@ -110,10 +128,10 @@ impl sf::IObject for FileSystemProxy {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(set_current_process: 1),
             ipc_cmif_interface_make_command_meta!(open_sd_card_filesystem: 18),
-            ipc_cmif_interface_make_command_meta!(output_access_log_to_sd_card: 1006)
+            ipc_cmif_interface_make_command_meta!(output_access_log_to_sd_card: 1006),
         ]
     }
 }

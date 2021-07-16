@@ -1,14 +1,18 @@
-use crate::ipc::cmif::sf;
-use crate::mem;
-use crate::svc;
-use crate::result::*;
-use crate::ipc::tipc::sf as tsf;
-use crate::service::tipc;
-use crate::service::tipc::sm;
-use crate::service::tipc::sm::IUserInterface;
+use crate::{
+    ipc::{cmif::sf, tipc::sf as tsf},
+    mem,
+    result::*,
+    service::{
+        tipc,
+        tipc::{sm, sm::IUserInterface},
+    },
+    svc,
+};
 
 pub trait IClientObject: sf::IObject {
-    fn new(session: sf::Session) -> Self where Self: Sized;
+    fn new(session: sf::Session) -> Self
+    where
+        Self: Sized;
 }
 
 pub trait INamedPort: IClientObject {
@@ -31,7 +35,9 @@ pub fn new_named_port_object<T: INamedPort + 'static>() -> Result<mem::Shared<T>
 
 pub fn new_service_object<T: IService + 'static>() -> Result<mem::Shared<T>> {
     let sm = tipc::new_named_port_object::<sm::UserInterface>()?;
-    let session_handle = sm.get().get_service_handle(sm::ServiceName::new(T::get_name()))?;
+    let session_handle = sm
+        .get()
+        .get_service_handle(sm::ServiceName::new(T::get_name()))?;
     let mut object = T::new(sf::Session::from_handle(session_handle.handle));
     if T::as_domain() {
         object.convert_to_domain()?;

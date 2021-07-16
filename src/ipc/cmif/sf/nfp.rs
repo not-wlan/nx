@@ -1,23 +1,19 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
-use crate::util;
+use crate::{ipc::cmif::sf, mem, result::*, util};
 
-use crate::ipc::cmif::sf::applet;
-use crate::ipc::cmif::sf::mii;
+use crate::ipc::cmif::sf::{applet, mii};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
 #[repr(C)]
 pub struct DeviceHandle {
     pub npad_id: u32,
-    pub reserved: [u8; 4]
+    pub reserved: [u8; 4],
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum State {
     NonInitialized = 0,
-    Initialized = 1
+    Initialized = 1,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -29,13 +25,13 @@ pub enum DeviceState {
     TagRemoved = 3,
     TagMounted = 4,
     Unavailable = 5,
-    Finalized = 6
+    Finalized = 6,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum DeviceType {
-    Amiibo = 0
+    Amiibo = 0,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -43,7 +39,7 @@ pub enum DeviceType {
 pub enum MountTarget {
     Rom = 1,
     Ram = 2,
-    All = 3
+    All = 3,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -51,7 +47,7 @@ pub enum MountTarget {
 pub struct Date {
     pub year: u16,
     pub month: u8,
-    pub day: u8
+    pub day: u8,
 }
 
 #[derive(Copy, Clone)]
@@ -62,7 +58,7 @@ pub struct TagInfo {
     pub reserved_1: [u8; 0x15],
     pub protocol: u32,
     pub tag_type: u32,
-    pub reserved_2: [u8; 0x30]
+    pub reserved_2: [u8; 0x30],
 }
 
 #[derive(Copy, Clone)]
@@ -72,7 +68,7 @@ pub struct RegisterInfo {
     pub first_write_date: Date,
     pub name: util::CString<41>,
     pub font_region: u8,
-    pub reserved: [u8; 0x7A]
+    pub reserved: [u8; 0x7A],
 }
 
 #[derive(Copy, Clone)]
@@ -82,7 +78,7 @@ pub struct CommonInfo {
     pub write_counter: u16,
     pub version: u16,
     pub application_area_size: u32,
-    pub reserved: [u8; 0x34]
+    pub reserved: [u8; 0x34],
 }
 
 #[derive(Copy, Clone)]
@@ -93,7 +89,7 @@ pub struct ModelInfo {
     pub figure_type: u8,
     pub model_number: u16,
     pub series: u8,
-    pub reserved: [u8; 0x39]
+    pub reserved: [u8; 0x39],
 }
 
 pub type AccessId = u32;

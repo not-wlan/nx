@@ -1,7 +1,4 @@
-use crate::result::*;
-use crate::results;
-use crate::ipc::cmif::sf;
-use crate::service;
+use crate::{ipc::cmif::sf, result::*, results, service};
 
 pub use crate::ipc::cmif::sf::nv::*;
 
@@ -9,37 +6,62 @@ pub use crate::ipc::cmif::sf::nv::*;
 pub fn convert_error_code(err: ErrorCode) -> Result<()> {
     match err {
         ErrorCode::Success => Ok(()),
-        ErrorCode::NotImplemented => Err(results::lib::gpu::ResultNvErrorCodeNotImplemented::make()),
+        ErrorCode::NotImplemented => {
+            Err(results::lib::gpu::ResultNvErrorCodeNotImplemented::make())
+        }
         ErrorCode::NotSupported => Err(results::lib::gpu::ResultNvErrorCodeNotSupported::make()),
-        ErrorCode::NotInitialized => Err(results::lib::gpu::ResultNvErrorCodeNotInitialized::make()),
-        ErrorCode::InvalidParameter => Err(results::lib::gpu::ResultNvErrorCodeInvalidParameter::make()),
+        ErrorCode::NotInitialized => {
+            Err(results::lib::gpu::ResultNvErrorCodeNotInitialized::make())
+        }
+        ErrorCode::InvalidParameter => {
+            Err(results::lib::gpu::ResultNvErrorCodeInvalidParameter::make())
+        }
         ErrorCode::TimeOut => Err(results::lib::gpu::ResultNvErrorCodeTimeOut::make()),
-        ErrorCode::InsufficientMemory => Err(results::lib::gpu::ResultNvErrorCodeInsufficientMemory::make()),
-        ErrorCode::ReadOnlyAttribute => Err(results::lib::gpu::ResultNvErrorCodeReadOnlyAttribute::make()),
+        ErrorCode::InsufficientMemory => {
+            Err(results::lib::gpu::ResultNvErrorCodeInsufficientMemory::make())
+        }
+        ErrorCode::ReadOnlyAttribute => {
+            Err(results::lib::gpu::ResultNvErrorCodeReadOnlyAttribute::make())
+        }
         ErrorCode::InvalidState => Err(results::lib::gpu::ResultNvErrorCodeInvalidState::make()),
-        ErrorCode::InvalidAddress => Err(results::lib::gpu::ResultNvErrorCodeInvalidAddress::make()),
+        ErrorCode::InvalidAddress => {
+            Err(results::lib::gpu::ResultNvErrorCodeInvalidAddress::make())
+        }
         ErrorCode::InvalidSize => Err(results::lib::gpu::ResultNvErrorCodeInvalidSize::make()),
         ErrorCode::InvalidValue => Err(results::lib::gpu::ResultNvErrorCodeInvalidValue::make()),
-        ErrorCode::AlreadyAllocated => Err(results::lib::gpu::ResultNvErrorCodeAlreadyAllocated::make()),
+        ErrorCode::AlreadyAllocated => {
+            Err(results::lib::gpu::ResultNvErrorCodeAlreadyAllocated::make())
+        }
         ErrorCode::Busy => Err(results::lib::gpu::ResultNvErrorCodeBusy::make()),
         ErrorCode::ResourceError => Err(results::lib::gpu::ResultNvErrorCodeResourceError::make()),
         ErrorCode::CountMismatch => Err(results::lib::gpu::ResultNvErrorCodeCountMismatch::make()),
-        ErrorCode::SharedMemoryTooSmall => Err(results::lib::gpu::ResultNvErrorCodeSharedMemoryTooSmall::make()),
-        ErrorCode::FileOperationFailed => Err(results::lib::gpu::ResultNvErrorCodeFileOperationFailed::make()),
+        ErrorCode::SharedMemoryTooSmall => {
+            Err(results::lib::gpu::ResultNvErrorCodeSharedMemoryTooSmall::make())
+        }
+        ErrorCode::FileOperationFailed => {
+            Err(results::lib::gpu::ResultNvErrorCodeFileOperationFailed::make())
+        }
         ErrorCode::IoctlFailed => Err(results::lib::gpu::ResultNvErrorCodeIoctlFailed::make()),
         _ => Err(results::lib::gpu::ResultNvErrorCodeInvalid::make()),
     }
 }
 
-// NvDrvService is the base trait for all the different services, since the only difference is their service names :P
-pub trait NvDrvService:service::cmif::IClientObject {}
+// NvDrvService is the base trait for all the different services, since the only
+// difference is their service names :P
+pub trait NvDrvService: service::cmif::IClientObject {}
 
 impl<S: NvDrvService> INvDrvService for S {
     fn open(&mut self, path: sf::InMapAliasBuffer) -> Result<(Fd, ErrorCode)> {
         ipc_cmif_client_send_request_command!([self.get_info(); 0] (path) => (fd: Fd, error_code: ErrorCode))
     }
 
-    fn ioctl(&mut self, fd: Fd, id: IoctlId, in_buf: sf::InAutoSelectBuffer, out_buf: sf::OutAutoSelectBuffer) -> Result<ErrorCode> {
+    fn ioctl(
+        &mut self,
+        fd: Fd,
+        id: IoctlId,
+        in_buf: sf::InAutoSelectBuffer,
+        out_buf: sf::OutAutoSelectBuffer,
+    ) -> Result<ErrorCode> {
         ipc_cmif_client_send_request_command!([self.get_info(); 1] (fd, id, in_buf, out_buf) => (error_code: ErrorCode))
     }
 
@@ -47,13 +69,18 @@ impl<S: NvDrvService> INvDrvService for S {
         ipc_cmif_client_send_request_command!([self.get_info(); 2] (fd) => (error_code: ErrorCode))
     }
 
-    fn initialize(&mut self, transfer_mem_size: u32, self_process_handle: sf::CopyHandle, transfer_mem_handle: sf::CopyHandle) -> Result<ErrorCode> {
+    fn initialize(
+        &mut self,
+        transfer_mem_size: u32,
+        self_process_handle: sf::CopyHandle,
+        transfer_mem_handle: sf::CopyHandle,
+    ) -> Result<ErrorCode> {
         ipc_cmif_client_send_request_command!([self.get_info(); 3] (transfer_mem_size, self_process_handle, transfer_mem_handle) => (error_code: ErrorCode))
     }
 }
 
 pub struct AppletNvDrvService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for AppletNvDrvService {
@@ -62,11 +89,11 @@ impl sf::IObject for AppletNvDrvService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(open: 0),
             ipc_cmif_interface_make_command_meta!(ioctl: 1),
             ipc_cmif_interface_make_command_meta!(close: 2),
-            ipc_cmif_interface_make_command_meta!(initialize: 3)
+            ipc_cmif_interface_make_command_meta!(initialize: 3),
         ]
     }
 }
@@ -94,7 +121,7 @@ impl service::cmif::IService for AppletNvDrvService {
 }
 
 pub struct SystemNvDrvService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for SystemNvDrvService {
@@ -103,11 +130,11 @@ impl sf::IObject for SystemNvDrvService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(open: 0),
             ipc_cmif_interface_make_command_meta!(ioctl: 1),
             ipc_cmif_interface_make_command_meta!(close: 2),
-            ipc_cmif_interface_make_command_meta!(initialize: 3)
+            ipc_cmif_interface_make_command_meta!(initialize: 3),
         ]
     }
 }

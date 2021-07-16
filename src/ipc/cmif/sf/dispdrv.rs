@@ -1,5 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
+use crate::{ipc::cmif::sf, result::*};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u32)]
@@ -30,7 +29,7 @@ pub enum ParcelTransactionId {
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum NativeHandleType {
-    BufferEvent = 0xF
+    BufferEvent = 0xF,
 }
 
 pub type BinderHandle = i32;

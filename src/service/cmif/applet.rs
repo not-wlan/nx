@@ -1,12 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*, service};
 
 pub use crate::ipc::cmif::sf::applet::*;
 
 pub struct StorageAccessor {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for StorageAccessor {
@@ -15,10 +12,10 @@ impl sf::IObject for StorageAccessor {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(get_size: 0),
             ipc_cmif_interface_make_command_meta!(write: 10),
-            ipc_cmif_interface_make_command_meta!(read: 11)
+            ipc_cmif_interface_make_command_meta!(read: 11),
         ]
     }
 }
@@ -44,7 +41,7 @@ impl IStorageAccessor for StorageAccessor {
 }
 
 pub struct Storage {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for Storage {
@@ -53,9 +50,7 @@ impl sf::IObject for Storage {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(open: 0)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(open: 0)]
     }
 }
 
@@ -72,7 +67,7 @@ impl IStorage for Storage {
 }
 
 pub struct LibraryAppletAccessor {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for LibraryAppletAccessor {
@@ -81,10 +76,10 @@ impl sf::IObject for LibraryAppletAccessor {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(get_applet_state_changed_event: 0),
             ipc_cmif_interface_make_command_meta!(start: 10),
-            ipc_cmif_interface_make_command_meta!(push_in_data: 100)
+            ipc_cmif_interface_make_command_meta!(push_in_data: 100),
         ]
     }
 }
@@ -110,7 +105,7 @@ impl ILibraryAppletAccessor for LibraryAppletAccessor {
 }
 
 pub struct LibraryAppletCreator {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for LibraryAppletCreator {
@@ -119,9 +114,9 @@ impl sf::IObject for LibraryAppletCreator {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(create_library_applet: 0),
-            ipc_cmif_interface_make_command_meta!(create_storage: 10)
+            ipc_cmif_interface_make_command_meta!(create_storage: 10),
         ]
     }
 }
@@ -133,7 +128,11 @@ impl service::cmif::IClientObject for LibraryAppletCreator {
 }
 
 impl ILibraryAppletCreator for LibraryAppletCreator {
-    fn create_library_applet(&mut self, id: AppletId, mode: LibraryAppletMode) -> Result<mem::Shared<dyn sf::IObject>> {
+    fn create_library_applet(
+        &mut self,
+        id: AppletId,
+        mode: LibraryAppletMode,
+    ) -> Result<mem::Shared<dyn sf::IObject>> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 0] (id, mode) => (library_applet_accessor: mem::Shared<LibraryAppletAccessor>))
     }
 
@@ -143,7 +142,7 @@ impl ILibraryAppletCreator for LibraryAppletCreator {
 }
 
 pub struct WindowController {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for WindowController {
@@ -152,9 +151,7 @@ impl sf::IObject for WindowController {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(acquire_foreground_rights: 10)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(acquire_foreground_rights: 10)]
     }
 }
 
@@ -171,7 +168,7 @@ impl IWindowController for WindowController {
 }
 
 pub struct SelfController {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for SelfController {
@@ -180,9 +177,7 @@ impl sf::IObject for SelfController {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(set_screenshot_permission: 10)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(set_screenshot_permission: 10)]
     }
 }
 
@@ -199,7 +194,7 @@ impl ISelfController for SelfController {
 }
 
 pub struct LibraryAppletProxy {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for LibraryAppletProxy {
@@ -208,10 +203,10 @@ impl sf::IObject for LibraryAppletProxy {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(get_self_controller: 1),
             ipc_cmif_interface_make_command_meta!(get_window_controller: 2),
-            ipc_cmif_interface_make_command_meta!(get_library_applet_creator: 11)
+            ipc_cmif_interface_make_command_meta!(get_library_applet_creator: 11),
         ]
     }
 }
@@ -237,7 +232,7 @@ impl ILibraryAppletProxy for LibraryAppletProxy {
 }
 
 pub struct AllSystemAppletProxiesService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for AllSystemAppletProxiesService {
@@ -246,9 +241,7 @@ impl sf::IObject for AllSystemAppletProxiesService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(open_library_applet_proxy: 201)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(open_library_applet_proxy: 201)]
     }
 }
 
@@ -259,7 +252,12 @@ impl service::cmif::IClientObject for AllSystemAppletProxiesService {
 }
 
 impl IAllSystemAppletProxiesService for AllSystemAppletProxiesService {
-    fn open_library_applet_proxy(&mut self, process_id: sf::ProcessId, self_process_handle: sf::CopyHandle, applet_attribute: sf::InMapAliasBuffer) -> Result<mem::Shared<dyn sf::IObject>> {
+    fn open_library_applet_proxy(
+        &mut self,
+        process_id: sf::ProcessId,
+        self_process_handle: sf::CopyHandle,
+        applet_attribute: sf::InMapAliasBuffer,
+    ) -> Result<mem::Shared<dyn sf::IObject>> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 201] (process_id, self_process_handle, applet_attribute) => (library_applet_proxy: mem::Shared<LibraryAppletProxy>))
     }
 }

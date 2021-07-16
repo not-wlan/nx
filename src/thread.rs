@@ -1,9 +1,6 @@
 extern crate alloc;
 
-use crate::result::*;
-use crate::svc;
-use crate::util;
-use crate::mem;
+use crate::{mem, result::*, svc, util};
 use core::ptr;
 
 pub type ThreadName = util::CString<0x20>;
@@ -17,10 +14,10 @@ pub enum ThreadState {
     Initialized = 1,
     DestroyedBeforeStarted = 2,
     Started = 3,
-    Terminated = 4
+    Terminated = 4,
 }
 
-extern fn thread_entry_impl(thread_arg: *mut u8) -> ! {
+extern "C" fn thread_entry_impl(thread_arg: *mut u8) -> ! {
     let thread_ref = thread_arg as *mut Thread;
     set_current_thread(thread_ref);
 
@@ -76,7 +73,15 @@ impl Thread {
         }
     }
 
-    pub fn existing(handle: svc::Handle, name: &str, stack: *mut u8, stack_size: usize, owns_stack: bool, entry: Option<fn(*mut u8)>, entry_arg: *mut u8) -> Result<Self> {
+    pub fn existing(
+        handle: svc::Handle,
+        name: &str,
+        stack: *mut u8,
+        stack_size: usize,
+        owns_stack: bool,
+        entry: Option<fn(*mut u8)>,
+        entry_arg: *mut u8,
+    ) -> Result<Self> {
         let mut thread = Self {
             self_ref: ptr::null_mut(),
             state: ThreadState::Started,
@@ -100,18 +105,35 @@ impl Thread {
         Ok(thread)
     }
 
-    pub fn new(entry: fn(*mut u8), entry_arg: *mut u8, stack: *mut u8, stack_size: usize, name: &str) -> Result<Self> {
+    pub fn new(
+        entry: fn(*mut u8),
+        entry_arg: *mut u8,
+        stack: *mut u8,
+        stack_size: usize,
+        name: &str,
+    ) -> Result<Self> {
         let mut stack_value = stack;
         let mut owns_stack = false;
         if stack_value.is_null() {
             unsafe {
-                let stack_layout = alloc::alloc::Layout::from_size_align_unchecked(stack_size, mem::PAGE_ALIGNMENT);
+                let stack_layout = alloc::alloc::Layout::from_size_align_unchecked(
+                    stack_size,
+                    mem::PAGE_ALIGNMENT,
+                );
                 stack_value = alloc::alloc::alloc(stack_layout);
                 owns_stack = true;
             }
         }
 
-        Self::existing(0, name, stack_value, stack_size, owns_stack, Some(entry), entry_arg)
+        Self::existing(
+            0,
+            name,
+            stack_value,
+            stack_size,
+            owns_stack,
+            Some(entry),
+            entry_arg,
+        )
     }
 
     pub fn create(&mut self, priority: i32, cpu_id: i32) -> Result<()> {
@@ -120,7 +142,13 @@ impl Thread {
             priority_value = get_current_thread().get_priority()?;
         }
 
-        self.handle = svc::create_thread(thread_entry_impl, self as *mut _ as *mut u8, (self.stack as usize + self.stack_size) as *const u8, priority_value, cpu_id)?;
+        self.handle = svc::create_thread(
+            thread_entry_impl,
+            self as *mut _ as *mut u8,
+            (self.stack as usize + self.stack_size) as *const u8,
+            priority_value,
+            cpu_id,
+        )?;
         Ok(())
     }
 
@@ -155,12 +183,17 @@ impl Drop for Thread {
     fn drop(&mut self) {
         if self.owns_stack {
             unsafe {
-                let stack_layout = alloc::alloc::Layout::from_size_align_unchecked(self.stack_size, mem::PAGE_ALIGNMENT);
+                let stack_layout = alloc::alloc::Layout::from_size_align_unchecked(
+                    self.stack_size,
+                    mem::PAGE_ALIGNMENT,
+                );
                 alloc::alloc::dealloc(self.stack, stack_layout);
             }
         }
 
-        // If a thread is not created (like the main thread) the entry field will have nothing (Thread::empty), and we want to avoid closing threads we did not create :P
+        // If a thread is not created (like the main thread) the entry field will have
+        // nothing (Thread::empty), and we want to avoid closing threads we did not
+        // create :P
         if self.entry.is_some() {
             let _ = svc::close_handle(self.handle);
         }

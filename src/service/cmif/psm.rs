@@ -1,11 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
+use crate::{ipc::cmif::sf, result::*, service};
 
 pub use crate::ipc::cmif::sf::psm::*;
 
 pub struct PsmServer {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for PsmServer {
@@ -14,9 +12,7 @@ impl sf::IObject for PsmServer {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_battery_charge_percentage: 0)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_battery_charge_percentage: 0)]
     }
 }
 

@@ -1,15 +1,15 @@
-use crate::result::*;
-use crate::results;
-use crate::svc;
-use crate::wait;
-use crate::ipc::cmif::sf::IObject;
-use crate::ipc::cmif::sf::hipc::IHipcManager;
-use crate::ipc::cmif::sf::hipc::IMitmQueryServer;
-use crate::service;
-use crate::service::tipc::sm;
-use crate::service::tipc::sm::IUserInterface;
-use crate::mem;
 use super::*;
+use crate::{
+    ipc::cmif::sf::{
+        hipc::{IHipcManager, IMitmQueryServer},
+        IObject,
+    },
+    mem,
+    result::*,
+    results, service,
+    service::tipc::{sm, sm::IUserInterface},
+    svc, wait,
+};
 use alloc::vec::Vec;
 use core::mem as cmem;
 
@@ -21,12 +21,22 @@ pub struct ServerContext<'a> {
     pub ctx: &'a mut CommandContext,
     pub raw_data_walker: DataWalker,
     pub domain_table: mem::Shared<DomainTable>,
-    pub new_sessions: &'a mut Vec<ServerHolder>
+    pub new_sessions: &'a mut Vec<ServerHolder>,
 }
 
 impl<'a> ServerContext<'a> {
-    pub const fn new(ctx: &'a mut CommandContext, raw_data_walker: DataWalker, domain_table: mem::Shared<DomainTable>, new_sessions: &'a mut Vec<ServerHolder>) -> Self {
-        Self { ctx: ctx, raw_data_walker: raw_data_walker, domain_table: domain_table, new_sessions: new_sessions }
+    pub const fn new(
+        ctx: &'a mut CommandContext,
+        raw_data_walker: DataWalker,
+        domain_table: mem::Shared<DomainTable>,
+        new_sessions: &'a mut Vec<ServerHolder>,
+    ) -> Self {
+        Self {
+            ctx: ctx,
+            raw_data_walker: raw_data_walker,
+            domain_table: domain_table,
+            new_sessions: new_sessions,
+        }
     }
 }
 
@@ -54,9 +64,11 @@ pub fn read_command_from_ipc_buffer(ctx: &mut CommandContext) -> CommandType {
             }
 
             let copy_handle_count = (*special_header).get_copy_handle_count();
-            ipc_buf = read_array_from_buffer(ipc_buf, copy_handle_count, &mut ctx.in_params.copy_handles);
+            ipc_buf =
+                read_array_from_buffer(ipc_buf, copy_handle_count, &mut ctx.in_params.copy_handles);
             let move_handle_count = (*special_header).get_move_handle_count();
-            ipc_buf = read_array_from_buffer(ipc_buf, move_handle_count, &mut ctx.in_params.move_handles);
+            ipc_buf =
+                read_array_from_buffer(ipc_buf, move_handle_count, &mut ctx.in_params.move_handles);
         }
 
         let send_static_count = (*command_header).get_send_static_count();
@@ -79,43 +91,84 @@ pub fn read_command_from_ipc_buffer(ctx: &mut CommandContext) -> CommandType {
 }
 
 #[inline(always)]
-pub fn write_command_response_on_ipc_buffer(ctx: &mut CommandContext, command_type: CommandType, data_size: u32) {
+pub fn write_command_response_on_ipc_buffer(
+    ctx: &mut CommandContext,
+    command_type: CommandType,
+    data_size: u32,
+) {
     unsafe {
         let mut ipc_buf = get_ipc_buffer();
-        
+
         let command_header = ipc_buf as *mut CommandHeader;
         ipc_buf = command_header.offset(1) as *mut u8;
 
         let data_word_count = (data_size + 3) / 4;
-        let has_special_header = ctx.out_params.send_process_id || (ctx.out_params.copy_handles.len() > 0) || (ctx.out_params.move_handles.len() > 0);
-        *command_header = CommandHeader::new(command_type as u32, ctx.send_statics.len() as u32, ctx.send_buffers.len() as u32, ctx.receive_buffers.len() as u32, ctx.exchange_buffers.len() as u32, data_word_count, ctx.receive_statics.len() as u32, has_special_header);
+        let has_special_header = ctx.out_params.send_process_id
+            || (ctx.out_params.copy_handles.len() > 0)
+            || (ctx.out_params.move_handles.len() > 0);
+        *command_header = CommandHeader::new(
+            command_type as u32,
+            ctx.send_statics.len() as u32,
+            ctx.send_buffers.len() as u32,
+            ctx.receive_buffers.len() as u32,
+            ctx.exchange_buffers.len() as u32,
+            data_word_count,
+            ctx.receive_statics.len() as u32,
+            has_special_header,
+        );
 
         if has_special_header {
             let special_header = ipc_buf as *mut CommandSpecialHeader;
             ipc_buf = special_header.offset(1) as *mut u8;
 
-            *special_header = CommandSpecialHeader::new(ctx.out_params.send_process_id, ctx.out_params.copy_handles.len() as u32, ctx.out_params.move_handles.len() as u32);
+            *special_header = CommandSpecialHeader::new(
+                ctx.out_params.send_process_id,
+                ctx.out_params.copy_handles.len() as u32,
+                ctx.out_params.move_handles.len() as u32,
+            );
             if ctx.out_params.send_process_id {
                 ipc_buf = ipc_buf.offset(cmem::size_of::<u64>() as isize);
             }
 
-            ipc_buf = write_array_to_buffer(ipc_buf, ctx.out_params.copy_handles.len() as u32, &ctx.out_params.copy_handles);
-            ipc_buf = write_array_to_buffer(ipc_buf, ctx.out_params.move_handles.len() as u32, &ctx.out_params.move_handles);
+            ipc_buf = write_array_to_buffer(
+                ipc_buf,
+                ctx.out_params.copy_handles.len() as u32,
+                &ctx.out_params.copy_handles,
+            );
+            ipc_buf = write_array_to_buffer(
+                ipc_buf,
+                ctx.out_params.move_handles.len() as u32,
+                &ctx.out_params.move_handles,
+            );
         }
 
         ipc_buf = write_array_to_buffer(ipc_buf, ctx.send_statics.len() as u32, &ctx.send_statics);
         ipc_buf = write_array_to_buffer(ipc_buf, ctx.send_buffers.len() as u32, &ctx.send_buffers);
-        ipc_buf = write_array_to_buffer(ipc_buf, ctx.receive_buffers.len() as u32, &ctx.receive_buffers);
-        ipc_buf = write_array_to_buffer(ipc_buf, ctx.exchange_buffers.len() as u32, &ctx.exchange_buffers);
+        ipc_buf = write_array_to_buffer(
+            ipc_buf,
+            ctx.receive_buffers.len() as u32,
+            &ctx.receive_buffers,
+        );
+        ipc_buf = write_array_to_buffer(
+            ipc_buf,
+            ctx.exchange_buffers.len() as u32,
+            &ctx.exchange_buffers,
+        );
         ctx.out_params.data_words_offset = ipc_buf;
 
         ipc_buf = ipc_buf.offset((data_word_count * cmem::size_of::<u32>() as u32) as isize);
-        write_array_to_buffer(ipc_buf, ctx.receive_statics.len() as u32, &ctx.receive_statics);
+        write_array_to_buffer(
+            ipc_buf,
+            ctx.receive_statics.len() as u32,
+            &ctx.receive_statics,
+        );
     }
 }
 
 #[inline(always)]
-pub fn read_request_command_from_ipc_buffer(ctx: &mut CommandContext) -> Result<(u32, DomainCommandType, DomainObjectId)> {
+pub fn read_request_command_from_ipc_buffer(
+    ctx: &mut CommandContext,
+) -> Result<(u32, DomainCommandType, DomainObjectId)> {
     unsafe {
         let mut domain_command_type = DomainCommandType::Invalid;
         let mut domain_object_id: DomainObjectId = 0;
@@ -132,7 +185,11 @@ pub fn read_request_command_from_ipc_buffer(ctx: &mut CommandContext) -> Result<
             let object_count = (*domain_header).object_count;
             domain_object_id = (*domain_header).domain_object_id;
             let objects_offset = data_offset.offset((*domain_header).data_size as isize);
-            read_array_from_buffer(objects_offset, object_count as u32, &mut ctx.in_params.objects);
+            read_array_from_buffer(
+                objects_offset,
+                object_count as u32,
+                &mut ctx.in_params.objects,
+            );
 
             data_header = data_offset as *mut DataHeader;
         }
@@ -141,7 +198,10 @@ pub fn read_request_command_from_ipc_buffer(ctx: &mut CommandContext) -> Result<
         if ctx.in_params.data_size >= DATA_PADDING {
             ctx.in_params.data_size -= DATA_PADDING;
             if ctx.in_params.data_size >= cmem::size_of::<DataHeader>() as u32 {
-                result_return_unless!((*data_header).magic == IN_DATA_HEADER_MAGIC, results::cmif::ResultInvalidInputHeader);
+                result_return_unless!(
+                    (*data_header).magic == IN_DATA_HEADER_MAGIC,
+                    results::cmif::ResultInvalidInputHeader
+                );
 
                 rq_id = (*data_header).value;
                 data_offset = data_header.offset(1) as *mut u8;
@@ -155,12 +215,19 @@ pub fn read_request_command_from_ipc_buffer(ctx: &mut CommandContext) -> Result<
 }
 
 #[inline(always)]
-pub fn write_request_command_response_on_ipc_buffer(ctx: &mut CommandContext, result: ResultCode, request_type: CommandType) {
+pub fn write_request_command_response_on_ipc_buffer(
+    ctx: &mut CommandContext,
+    result: ResultCode,
+    request_type: CommandType,
+) {
     unsafe {
         let ipc_buf = get_ipc_buffer();
-        let mut data_size = DATA_PADDING + cmem::size_of::<DataHeader>() as u32 + ctx.out_params.data_size;
+        let mut data_size =
+            DATA_PADDING + cmem::size_of::<DataHeader>() as u32 + ctx.out_params.data_size;
         if ctx.object_info.is_domain() {
-            data_size += (cmem::size_of::<DomainOutDataHeader>() + cmem::size_of::<DomainObjectId>() * ctx.out_params.objects.len()) as u32;
+            data_size += (cmem::size_of::<DomainOutDataHeader>()
+                + cmem::size_of::<DomainObjectId>() * ctx.out_params.objects.len())
+                as u32;
         }
         data_size = (data_size + 1) & !1;
 
@@ -172,15 +239,21 @@ pub fn write_request_command_response_on_ipc_buffer(ctx: &mut CommandContext, re
             let domain_header = data_offset as *mut DomainOutDataHeader;
             data_offset = domain_header.offset(1) as *mut u8;
             *domain_header = DomainOutDataHeader::new(ctx.out_params.objects.len() as u32);
-            let objects_offset = data_offset.offset((cmem::size_of::<DataHeader>() + ctx.out_params.data_size as usize) as isize);
-            write_array_to_buffer(objects_offset, ctx.out_params.objects.len() as u32, &ctx.out_params.objects);
+            let objects_offset = data_offset.offset(
+                (cmem::size_of::<DataHeader>() + ctx.out_params.data_size as usize) as isize,
+            );
+            write_array_to_buffer(
+                objects_offset,
+                ctx.out_params.objects.len() as u32,
+                &ctx.out_params.objects,
+            );
             data_header = data_offset as *mut DataHeader;
         }
         data_offset = data_header.offset(1) as *mut u8;
 
         let version: u32 = match request_type {
             CommandType::RequestWithContext => 1,
-            _ => 0
+            _ => 0,
         };
         *data_header = DataHeader::new(OUT_DATA_HEADER_MAGIC, version, result.get_value(), 0);
         ctx.out_params.data_offset = data_offset;
@@ -196,7 +269,10 @@ pub fn read_control_command_from_ipc_buffer(ctx: &mut CommandContext) -> Result<
         let data_header = data_offset as *mut DataHeader;
         data_offset = data_header.offset(1) as *mut u8;
 
-        result_return_unless!((*data_header).magic == IN_DATA_HEADER_MAGIC, results::cmif::ResultInvalidInputHeader);
+        result_return_unless!(
+            (*data_header).magic == IN_DATA_HEADER_MAGIC,
+            results::cmif::ResultInvalidInputHeader
+        );
         let control_rq_id = (*data_header).value;
 
         ctx.in_params.data_offset = data_offset;
@@ -206,10 +282,15 @@ pub fn read_control_command_from_ipc_buffer(ctx: &mut CommandContext) -> Result<
 }
 
 #[inline(always)]
-pub fn write_control_command_response_on_ipc_buffer(ctx: &mut CommandContext, result: ResultCode, control_type: CommandType) {
+pub fn write_control_command_response_on_ipc_buffer(
+    ctx: &mut CommandContext,
+    result: ResultCode,
+    control_type: CommandType,
+) {
     unsafe {
         let ipc_buf = get_ipc_buffer();
-        let mut data_size = DATA_PADDING + cmem::size_of::<DataHeader>() as u32 + ctx.out_params.data_size;
+        let mut data_size =
+            DATA_PADDING + cmem::size_of::<DataHeader>() as u32 + ctx.out_params.data_size;
         data_size = (data_size + 1) & !1;
 
         write_command_response_on_ipc_buffer(ctx, control_type, data_size);
@@ -220,7 +301,7 @@ pub fn write_control_command_response_on_ipc_buffer(ctx: &mut CommandContext, re
 
         let version: u32 = match control_type {
             CommandType::ControlWithContext => 1,
-            _ => 0
+            _ => 0,
         };
         *data_header = DataHeader::new(OUT_DATA_HEADER_MAGIC, version, result.get_value(), 0);
         ctx.out_params.data_offset = data_offset;
@@ -254,7 +335,9 @@ impl<T: Copy> CommandParameter<T> for T {
     }
 }
 
-impl<const A: BufferAttribute, const S: usize> CommandParameter<sf::Buffer<A, S>> for sf::Buffer<A, S> {
+impl<const A: BufferAttribute, const S: usize> CommandParameter<sf::Buffer<A, S>>
+    for sf::Buffer<A, S>
+{
     fn after_request_read(ctx: &mut ServerContext) -> Result<Self> {
         ctx.ctx.pop_buffer(&mut ctx.raw_data_walker)
     }
@@ -286,11 +369,11 @@ impl<const M: HandleMode> CommandParameter<sf::Handle<M>> for sf::Handle<M> {
 impl CommandParameter<sf::ProcessId> for sf::ProcessId {
     fn after_request_read(ctx: &mut ServerContext) -> Result<Self> {
         if ctx.ctx.in_params.send_process_id {
-            // TODO: is this really how process ID works? (is the in raw u64 just placeholder data?)
+            // TODO: is this really how process ID works? (is the in raw u64 just
+            // placeholder data?)
             let _ = ctx.raw_data_walker.advance_get::<u64>();
-            Ok(sf::ProcessId::from(ctx.ctx.in_params.process_id)) 
-        }
-        else {
+            Ok(sf::ProcessId::from(ctx.ctx.in_params.process_id))
+        } else {
             Err(results::hipc::ResultUnsupportedOperation::make())
         }
     }
@@ -314,14 +397,23 @@ impl CommandParameter<mem::Shared<dyn sf::IObject>> for mem::Shared<dyn sf::IObj
             let domain_object_id = ctx.domain_table.get().allocate_id()?;
             ctx.ctx.out_params.push_domain_object(domain_object_id)?;
             session.get().set_info(ObjectInfo::new());
-            ctx.domain_table.get().domains.push(ServerHolder::new_domain_session(0, domain_object_id, session.clone()));
+            ctx.domain_table
+                .get()
+                .domains
+                .push(ServerHolder::new_domain_session(
+                    0,
+                    domain_object_id,
+                    session.clone(),
+                ));
             Ok(())
-        }
-        else {
+        } else {
             let (server_handle, client_handle) = svc::create_session(false, 0)?;
-            ctx.ctx.out_params.push_handle(sf::MoveHandle::from(client_handle))?;
+            ctx.ctx
+                .out_params
+                .push_handle(sf::MoveHandle::from(client_handle))?;
             session.get().set_info(ObjectInfo::new());
-            ctx.new_sessions.push(ServerHolder::new_session(server_handle, session.clone()));
+            ctx.new_sessions
+                .push(ServerHolder::new_session(server_handle, session.clone()));
             Ok(())
         }
     }
@@ -332,18 +424,24 @@ impl CommandParameter<mem::Shared<dyn sf::IObject>> for mem::Shared<dyn sf::IObj
 }
 
 pub trait IServerObject: sf::IObject {
-    fn new() -> Self where Self: Sized;
+    fn new() -> Self
+    where
+        Self: Sized;
 }
 
 pub trait IMitmServerObject: sf::IObject {
-    fn new(info: sm::MitmProcessInfo) -> Self where Self: Sized;
+    fn new(info: sm::MitmProcessInfo) -> Self
+    where
+        Self: Sized;
 }
 
 fn create_server_object_impl<S: IServerObject + 'static>() -> mem::Shared<dyn sf::IObject> {
     mem::Shared::new(S::new())
 }
 
-fn create_mitm_server_object_impl<S: IMitmServerObject + 'static>(info: sm::MitmProcessInfo) -> mem::Shared<dyn sf::IObject> {
+fn create_mitm_server_object_impl<S: IMitmServerObject + 'static>(
+    info: sm::MitmProcessInfo,
+) -> mem::Shared<dyn sf::IObject> {
     mem::Shared::new(S::new(info))
 }
 
@@ -354,7 +452,7 @@ pub type NewMitmServerFn = fn(sm::MitmProcessInfo) -> mem::Shared<dyn sf::IObjec
 #[repr(u8)]
 pub enum WaitHandleType {
     Server,
-    Session
+    Session,
 }
 
 pub struct DomainTable {
@@ -364,7 +462,10 @@ pub struct DomainTable {
 
 impl DomainTable {
     pub fn new() -> Self {
-        Self { table: Vec::new(), domains: Vec::new() }
+        Self {
+            table: Vec::new(),
+            domains: Vec::new(),
+        }
     }
 
     pub fn allocate_id(&mut self) -> Result<DomainObjectId> {
@@ -379,12 +480,15 @@ impl DomainTable {
         }
     }
 
-    pub fn allocate_specific_id(&mut self, specific_domain_object_id: DomainObjectId) -> Result<DomainObjectId> {
+    pub fn allocate_specific_id(
+        &mut self,
+        specific_domain_object_id: DomainObjectId,
+    ) -> Result<DomainObjectId> {
         if !self.table.contains(&specific_domain_object_id) {
             self.table.push(specific_domain_object_id);
             return Ok(specific_domain_object_id);
         }
-        
+
         Err(ResultCode::new(0xBEBA))
     }
 
@@ -406,10 +510,11 @@ impl DomainTable {
         }
         Err(ResultCode::new(0xBEB2))
     }
-    
+
     pub fn deallocate_domain(&mut self, domain_object_id: DomainObjectId) {
         self.table.retain(|&id| id != domain_object_id);
-        self.domains.retain(|holder| holder.info.domain_object_id != domain_object_id);
+        self.domains
+            .retain(|holder| holder.info.domain_object_id != domain_object_id);
     }
 }
 
@@ -422,38 +527,123 @@ pub struct ServerHolder {
     pub mitm_forward_info: ObjectInfo,
     pub is_mitm_service: bool,
     pub service_name: sm::ServiceName,
-    pub domain_table: mem::Shared<DomainTable>
+    pub domain_table: mem::Shared<DomainTable>,
 }
 
 impl ServerHolder {
     pub fn new_server_session<S: IServerObject + 'static>(handle: svc::Handle) -> Self {
-        Self { server: mem::Shared::new(S::new()), info: ObjectInfo::from_handle(handle), new_server_fn: None, new_mitm_server_fn: None, handle_type: WaitHandleType::Session, mitm_forward_info: ObjectInfo::new(), is_mitm_service: false, service_name: sm::ServiceName::empty(), domain_table: mem::Shared::empty() } 
+        Self {
+            server: mem::Shared::new(S::new()),
+            info: ObjectInfo::from_handle(handle),
+            new_server_fn: None,
+            new_mitm_server_fn: None,
+            handle_type: WaitHandleType::Session,
+            mitm_forward_info: ObjectInfo::new(),
+            is_mitm_service: false,
+            service_name: sm::ServiceName::empty(),
+            domain_table: mem::Shared::empty(),
+        }
     }
 
     pub fn new_session(handle: svc::Handle, object: mem::Shared<dyn sf::IObject>) -> Self {
-        Self { server: object, info: ObjectInfo::from_handle(handle), new_server_fn: None, new_mitm_server_fn: None, handle_type: WaitHandleType::Session, mitm_forward_info: ObjectInfo::new(), is_mitm_service: false, service_name: sm::ServiceName::empty(), domain_table: mem::Shared::empty() } 
+        Self {
+            server: object,
+            info: ObjectInfo::from_handle(handle),
+            new_server_fn: None,
+            new_mitm_server_fn: None,
+            handle_type: WaitHandleType::Session,
+            mitm_forward_info: ObjectInfo::new(),
+            is_mitm_service: false,
+            service_name: sm::ServiceName::empty(),
+            domain_table: mem::Shared::empty(),
+        }
     }
 
-    pub fn new_domain_session(handle: svc::Handle, domain_object_id: DomainObjectId, object: mem::Shared<dyn sf::IObject>) -> Self {
-        Self { server: object, info: ObjectInfo::from_domain_object_id(handle, domain_object_id), new_server_fn: None, new_mitm_server_fn: None, handle_type: WaitHandleType::Session, mitm_forward_info: ObjectInfo::new(), is_mitm_service: false, service_name: sm::ServiceName::empty(), domain_table: mem::Shared::empty() } 
-    }
-    
-    pub fn new_server<S: IServerObject + 'static>(handle: svc::Handle, service_name: sm::ServiceName) -> Self {
-        Self { server: mem::Shared::<S>::empty(), info: ObjectInfo::from_handle(handle), new_server_fn: Some(create_server_object_impl::<S>), new_mitm_server_fn: None, handle_type: WaitHandleType::Server, mitm_forward_info: ObjectInfo::new(), is_mitm_service: false, service_name: service_name, domain_table: mem::Shared::empty() } 
+    pub fn new_domain_session(
+        handle: svc::Handle,
+        domain_object_id: DomainObjectId,
+        object: mem::Shared<dyn sf::IObject>,
+    ) -> Self {
+        Self {
+            server: object,
+            info: ObjectInfo::from_domain_object_id(handle, domain_object_id),
+            new_server_fn: None,
+            new_mitm_server_fn: None,
+            handle_type: WaitHandleType::Session,
+            mitm_forward_info: ObjectInfo::new(),
+            is_mitm_service: false,
+            service_name: sm::ServiceName::empty(),
+            domain_table: mem::Shared::empty(),
+        }
     }
 
-    pub fn new_mitm_server<S: IMitmServerObject + 'static>(handle: svc::Handle, service_name: sm::ServiceName) -> Self {
-        Self { server: mem::Shared::<S>::empty(), info: ObjectInfo::from_handle(handle), new_server_fn: None, new_mitm_server_fn: Some(create_mitm_server_object_impl::<S>), handle_type: WaitHandleType::Server, mitm_forward_info: ObjectInfo::new(), is_mitm_service: true, service_name: service_name, domain_table: mem::Shared::empty() } 
+    pub fn new_server<S: IServerObject + 'static>(
+        handle: svc::Handle,
+        service_name: sm::ServiceName,
+    ) -> Self {
+        Self {
+            server: mem::Shared::<S>::empty(),
+            info: ObjectInfo::from_handle(handle),
+            new_server_fn: Some(create_server_object_impl::<S>),
+            new_mitm_server_fn: None,
+            handle_type: WaitHandleType::Server,
+            mitm_forward_info: ObjectInfo::new(),
+            is_mitm_service: false,
+            service_name: service_name,
+            domain_table: mem::Shared::empty(),
+        }
+    }
+
+    pub fn new_mitm_server<S: IMitmServerObject + 'static>(
+        handle: svc::Handle,
+        service_name: sm::ServiceName,
+    ) -> Self {
+        Self {
+            server: mem::Shared::<S>::empty(),
+            info: ObjectInfo::from_handle(handle),
+            new_server_fn: None,
+            new_mitm_server_fn: Some(create_mitm_server_object_impl::<S>),
+            handle_type: WaitHandleType::Server,
+            mitm_forward_info: ObjectInfo::new(),
+            is_mitm_service: true,
+            service_name: service_name,
+            domain_table: mem::Shared::empty(),
+        }
     }
 
     pub fn make_new_session(&self, handle: svc::Handle) -> Result<Self> {
         let new_fn = self.get_new_server_fn()?;
-        Ok(Self { server: (new_fn)(), info: ObjectInfo::from_handle(handle), new_server_fn: self.new_server_fn, new_mitm_server_fn: self.new_mitm_server_fn, handle_type: WaitHandleType::Session, mitm_forward_info: ObjectInfo::new(), is_mitm_service: self.is_mitm_service, service_name: sm::ServiceName::empty(), domain_table: mem::Shared::empty() })
+        Ok(Self {
+            server: (new_fn)(),
+            info: ObjectInfo::from_handle(handle),
+            new_server_fn: self.new_server_fn,
+            new_mitm_server_fn: self.new_mitm_server_fn,
+            handle_type: WaitHandleType::Session,
+            mitm_forward_info: ObjectInfo::new(),
+            is_mitm_service: self.is_mitm_service,
+            service_name: sm::ServiceName::empty(),
+            domain_table: mem::Shared::empty(),
+        })
     }
 
-    pub fn make_new_mitm_session(&self, handle: svc::Handle, forward_handle: svc::Handle, info: sm::MitmProcessInfo) -> Result<Self> {
+    pub fn make_new_mitm_session(
+        &self,
+        handle: svc::Handle,
+        forward_handle: svc::Handle,
+        info: sm::MitmProcessInfo,
+    ) -> Result<Self> {
         let new_mitm_fn = self.get_new_mitm_server_fn()?;
-        Ok(Self { server: (new_mitm_fn)(info), info: ObjectInfo::from_handle(handle), new_server_fn: self.new_server_fn, new_mitm_server_fn: self.new_mitm_server_fn, handle_type: WaitHandleType::Session, mitm_forward_info: ObjectInfo::from_handle(forward_handle), is_mitm_service: self.is_mitm_service, service_name: sm::ServiceName::empty(), domain_table: mem::Shared::empty() })
+        Ok(Self {
+            server: (new_mitm_fn)(info),
+            info: ObjectInfo::from_handle(handle),
+            new_server_fn: self.new_server_fn,
+            new_mitm_server_fn: self.new_mitm_server_fn,
+            handle_type: WaitHandleType::Session,
+            mitm_forward_info: ObjectInfo::from_handle(forward_handle),
+            is_mitm_service: self.is_mitm_service,
+            service_name: sm::ServiceName::empty(),
+            domain_table: mem::Shared::empty(),
+        })
     }
 
     pub fn clone_self(&self, handle: svc::Handle, forward_handle: svc::Handle) -> Result<Self> {
@@ -461,20 +651,30 @@ impl ServerHolder {
         object_info.handle = handle;
         let mut mitm_fwd_info = self.mitm_forward_info;
         mitm_fwd_info.handle = forward_handle;
-        Ok(Self { server: self.server.clone(), info: object_info, new_server_fn: self.new_server_fn, new_mitm_server_fn: self.new_mitm_server_fn, handle_type: WaitHandleType::Session, mitm_forward_info: mitm_fwd_info, is_mitm_service: forward_handle != 0, service_name: sm::ServiceName::empty(), domain_table: self.domain_table.clone() })
+        Ok(Self {
+            server: self.server.clone(),
+            info: object_info,
+            new_server_fn: self.new_server_fn,
+            new_mitm_server_fn: self.new_mitm_server_fn,
+            handle_type: WaitHandleType::Session,
+            mitm_forward_info: mitm_fwd_info,
+            is_mitm_service: forward_handle != 0,
+            service_name: sm::ServiceName::empty(),
+            domain_table: self.domain_table.clone(),
+        })
     }
 
     pub fn get_new_server_fn(&self) -> Result<NewServerFn> {
         match self.new_server_fn {
             Some(new_server_fn) => Ok(new_server_fn),
-            None => Err(results::hipc::ResultSessionClosed::make())
+            None => Err(results::hipc::ResultSessionClosed::make()),
         }
     }
 
     pub fn get_new_mitm_server_fn(&self) -> Result<NewMitmServerFn> {
         match self.new_mitm_server_fn {
             Some(new_mitm_server_fn) => Ok(new_mitm_server_fn),
-            None => Err(results::hipc::ResultSessionClosed::make())
+            None => Err(results::hipc::ResultSessionClosed::make()),
         }
     }
 
@@ -487,11 +687,14 @@ impl ServerHolder {
 
         let domain_object_id = match self.is_mitm_service {
             true => {
-                let forward_object_id = self.mitm_forward_info.convert_current_object_to_domain()?;
+                let forward_object_id =
+                    self.mitm_forward_info.convert_current_object_to_domain()?;
                 self.mitm_forward_info.domain_object_id = forward_object_id;
-                self.domain_table.get().allocate_specific_id(forward_object_id)?
-            },
-            false => self.domain_table.get().allocate_id()?
+                self.domain_table
+                    .get()
+                    .allocate_specific_id(forward_object_id)?
+            }
+            false => self.domain_table.get().allocate_id()?,
         };
 
         self.info.domain_object_id = domain_object_id;
@@ -503,12 +706,14 @@ impl ServerHolder {
             let sm = service::tipc::new_named_port_object::<sm::UserInterface>()?;
             match self.is_mitm_service {
                 true => sm.get().atmosphere_uninstall_mitm(self.service_name)?,
-                false => sm.get().unregister_service(self.service_name)?
+                false => sm.get().unregister_service(self.service_name)?,
             };
             sm.get().detach_client(tipc::sf::ProcessId::new())?;
         }
 
-        // Don't close our session like a normal one (like the forward session below) as we allocated the object IDs ourselves, the only thing we do have to close is the handle
+        // Don't close our session like a normal one (like the forward session below) as
+        // we allocated the object IDs ourselves, the only thing we do have to close is
+        // the handle
         if self.info.owns_handle {
             svc::close_handle(self.info.handle)?;
         }
@@ -528,12 +733,18 @@ pub struct HipcManager<'a> {
     server_holder: &'a mut ServerHolder,
     pointer_buf_size: usize,
     pub cloned_object_server_handle: svc::Handle,
-    pub cloned_object_forward_handle: svc::Handle
+    pub cloned_object_forward_handle: svc::Handle,
 }
 
 impl<'a> HipcManager<'a> {
     pub fn new(server_holder: &'a mut ServerHolder, pointer_buf_size: usize) -> Self {
-        Self { session: sf::Session::new(), server_holder: server_holder, pointer_buf_size: pointer_buf_size, cloned_object_server_handle: 0, cloned_object_forward_handle: 0 }
+        Self {
+            session: sf::Session::new(),
+            server_holder: server_holder,
+            pointer_buf_size: pointer_buf_size,
+            cloned_object_server_handle: 0,
+            cloned_object_forward_handle: 0,
+        }
     }
 
     pub fn has_cloned_object(&self) -> bool {
@@ -541,7 +752,10 @@ impl<'a> HipcManager<'a> {
     }
 
     pub fn clone_object(&self) -> Result<ServerHolder> {
-        self.server_holder.clone_self(self.cloned_object_server_handle, self.cloned_object_forward_handle)
+        self.server_holder.clone_self(
+            self.cloned_object_server_handle,
+            self.cloned_object_forward_handle,
+        )
     }
 }
 
@@ -550,17 +764,23 @@ impl<'a> IHipcManager for HipcManager<'a> {
         self.server_holder.convert_to_domain()
     }
 
-    fn copy_from_current_domain(&mut self, _domain_object_id: DomainObjectId) -> Result<sf::MoveHandle> {
+    fn copy_from_current_domain(
+        &mut self,
+        _domain_object_id: DomainObjectId,
+    ) -> Result<sf::MoveHandle> {
         // TODO
         Err(ResultCode::new(0xBAD1))
     }
 
     fn clone_current_object(&mut self) -> Result<sf::MoveHandle> {
         let (server_handle, client_handle) = svc::create_session(false, 0)?;
-        
+
         let mut forward_handle: svc::Handle = 0;
         if self.server_holder.is_mitm_service {
-            let fwd_handle = self.server_holder.mitm_forward_info.clone_current_object()?;
+            let fwd_handle = self
+                .server_holder
+                .mitm_forward_info
+                .clone_current_object()?;
             forward_handle = fwd_handle.handle;
         }
 
@@ -585,19 +805,19 @@ impl<'a> sf::IObject for HipcManager<'a> {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(convert_current_object_to_domain: 0),
             ipc_cmif_interface_make_command_meta!(copy_from_current_domain: 1),
             ipc_cmif_interface_make_command_meta!(clone_current_object: 2),
             ipc_cmif_interface_make_command_meta!(query_pointer_buffer_size: 3),
-            ipc_cmif_interface_make_command_meta!(clone_current_object_ex: 4)
+            ipc_cmif_interface_make_command_meta!(clone_current_object_ex: 4),
         ]
     }
 }
 
 pub struct MitmQueryServer<S: IMitmService> {
     session: sf::Session,
-    phantom: core::marker::PhantomData<S>
+    phantom: core::marker::PhantomData<S>,
 }
 
 impl<S: IMitmService> IMitmQueryServer for MitmQueryServer<S> {
@@ -612,15 +832,16 @@ impl<S: IMitmService> sf::IObject for MitmQueryServer<S> {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(should_mitm: 65000)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(should_mitm: 65000)]
     }
 }
 
 impl<S: IMitmService> IServerObject for MitmQueryServer<S> {
     fn new() -> Self {
-        Self { session: sf::Session::new(), phantom: core::marker::PhantomData }
+        Self {
+            session: sf::Session::new(),
+            phantom: core::marker::PhantomData,
+        }
     }
 }
 
@@ -644,14 +865,18 @@ pub trait INamedPort: IServerObject {
 pub struct ServerManager<const P: usize> {
     server_holders: Vec<ServerHolder>,
     wait_handles: [svc::Handle; MAX_COUNT],
-    pointer_buffer: [u8; P]
+    pointer_buffer: [u8; P],
 }
 
 impl<const P: usize> ServerManager<P> {
     pub fn new() -> Result<Self> {
-        Ok(Self { server_holders: Vec::new(), wait_handles: [0; MAX_COUNT], pointer_buffer: [0; P] })
+        Ok(Self {
+            server_holders: Vec::new(),
+            wait_handles: [0; MAX_COUNT],
+            pointer_buffer: [0; P],
+        })
     }
-    
+
     #[inline(always)]
     fn prepare_wait_handles(&mut self) -> &[svc::Handle] {
         let mut handles_index: usize = 0;
@@ -667,7 +892,15 @@ impl<const P: usize> ServerManager<P> {
     }
 
     #[inline(always)]
-    fn handle_request_command(&mut self, ctx: &mut CommandContext, rq_id: u32, command_type: CommandType, domain_command_type: DomainCommandType, ipc_buf_backup: &[u8], domain_table: mem::Shared<DomainTable>) -> Result<()> {
+    fn handle_request_command(
+        &mut self,
+        ctx: &mut CommandContext,
+        rq_id: u32,
+        command_type: CommandType,
+        domain_command_type: DomainCommandType,
+        ipc_buf_backup: &[u8],
+        domain_table: mem::Shared<DomainTable>,
+    ) -> Result<()> {
         let is_domain = ctx.object_info.is_domain();
         let domain_table_clone = domain_table.clone();
         let mut do_handle_request = || -> Result<()> {
@@ -683,28 +916,48 @@ impl<const P: usize> ServerManager<P> {
                         // Let the original service take care of the command for us.
                         svc::send_sync_request(server_holder.mitm_forward_info.handle)
                     };
-                    
+
                     let target_server = match is_domain {
                         true => match ctx.object_info.owns_handle {
                             true => server_holder.server.clone(),
-                            false => domain_table_clone.get().find_domain(ctx.object_info.domain_object_id)?
+                            false => domain_table_clone
+                                .get()
+                                .find_domain(ctx.object_info.domain_object_id)?,
                         },
-                        false => server_holder.server.clone()
+                        false => server_holder.server.clone(),
                     };
-                    // Nothing done on success here, as if the command succeeds it will automatically respond by itself.
+                    // Nothing done on success here, as if the command succeeds it will
+                    // automatically respond by itself.
                     let mut command_found = false;
                     for command in target_server.get().get_command_table() {
                         if command.matches(rq_id) {
                             command_found = true;
-                            let mut server_ctx = ServerContext::new(ctx, DataWalker::empty(), domain_table_clone.clone(), &mut new_sessions);
-                            if let Err(rc) = target_server.get().call_self_command(command.command_fn, &mut server_ctx) {
-                                if server_holder.is_mitm_service && results::sm::mitm::ResultShouldForwardToSession::matches(rc) {
+                            let mut server_ctx = ServerContext::new(
+                                ctx,
+                                DataWalker::empty(),
+                                domain_table_clone.clone(),
+                                &mut new_sessions,
+                            );
+                            if let Err(rc) = target_server
+                                .get()
+                                .call_self_command(command.command_fn, &mut server_ctx)
+                            {
+                                if server_holder.is_mitm_service
+                                    && results::sm::mitm::ResultShouldForwardToSession::matches(rc)
+                                {
                                     if let Err(rc) = send_to_forward_handle() {
-                                        write_request_command_response_on_ipc_buffer(ctx, rc, command_type);
+                                        write_request_command_response_on_ipc_buffer(
+                                            ctx,
+                                            rc,
+                                            command_type,
+                                        );
                                     }
-                                }
-                                else {
-                                    write_request_command_response_on_ipc_buffer(ctx, rc, command_type);
+                                } else {
+                                    write_request_command_response_on_ipc_buffer(
+                                        ctx,
+                                        rc,
+                                        command_type,
+                                    );
                                 }
                             }
                         }
@@ -714,9 +967,12 @@ impl<const P: usize> ServerManager<P> {
                             if let Err(rc) = send_to_forward_handle() {
                                 write_request_command_response_on_ipc_buffer(ctx, rc, command_type);
                             }
-                        }
-                        else {
-                            write_request_command_response_on_ipc_buffer(ctx, results::cmif::ResultInvalidCommandRequestId::make(), command_type);
+                        } else {
+                            write_request_command_response_on_ipc_buffer(
+                                ctx,
+                                results::cmif::ResultInvalidCommandRequestId::make(),
+                                command_type,
+                            );
                         }
                     }
                     break;
@@ -733,15 +989,16 @@ impl<const P: usize> ServerManager<P> {
                 // Invalid command type might mean that the session isn't a domain :P
                 match is_domain {
                     false => do_handle_request()?,
-                    true => return Err(ResultCode::new(0xd3d))
+                    true => return Err(ResultCode::new(0xd3d)),
                 };
-            },
+            }
             DomainCommandType::SendMessage => do_handle_request()?,
             DomainCommandType::Close => {
                 if !ctx.object_info.owns_handle {
-                    domain_table.get().deallocate_domain(ctx.object_info.domain_object_id);
-                }
-                else {
+                    domain_table
+                        .get()
+                        .deallocate_domain(ctx.object_info.domain_object_id);
+                } else {
                     // TODO: Abort? Error?
                 }
             }
@@ -751,26 +1008,43 @@ impl<const P: usize> ServerManager<P> {
     }
 
     #[inline(always)]
-    fn handle_control_command(&mut self, ctx: &mut CommandContext, rq_id: u32, command_type: CommandType) -> Result<()> {
+    fn handle_control_command(
+        &mut self,
+        ctx: &mut CommandContext,
+        rq_id: u32,
+        command_type: CommandType,
+    ) -> Result<()> {
         for server_holder in &mut self.server_holders {
             let server_info = server_holder.info;
             if server_info.handle == ctx.object_info.handle {
                 let mut hipc_manager = HipcManager::new(server_holder, P);
-                // Nothing done on success here, as if the command succeeds it will automatically respond by itself.
+                // Nothing done on success here, as if the command succeeds it will
+                // automatically respond by itself.
                 let mut command_found = false;
                 for command in hipc_manager.get_command_table() {
                     if command.matches(rq_id) {
                         command_found = true;
                         let mut unused_new_sessions: Vec<ServerHolder> = Vec::new();
                         let unused_domain_table = mem::Shared::empty();
-                        let mut server_ctx = ServerContext::new(ctx, DataWalker::empty(), unused_domain_table, &mut unused_new_sessions);
-                        if let Err(rc) = hipc_manager.call_self_command(command.command_fn, &mut server_ctx) {
+                        let mut server_ctx = ServerContext::new(
+                            ctx,
+                            DataWalker::empty(),
+                            unused_domain_table,
+                            &mut unused_new_sessions,
+                        );
+                        if let Err(rc) =
+                            hipc_manager.call_self_command(command.command_fn, &mut server_ctx)
+                        {
                             write_control_command_response_on_ipc_buffer(ctx, rc, command_type);
                         }
                     }
                 }
                 if !command_found {
-                    write_control_command_response_on_ipc_buffer(ctx, results::cmif::ResultInvalidCommandRequestId::make(), command_type);
+                    write_control_command_response_on_ipc_buffer(
+                        ctx,
+                        results::cmif::ResultInvalidCommandRequestId::make(),
+                        command_type,
+                    );
                 }
 
                 if hipc_manager.has_cloned_object() {
@@ -804,10 +1078,18 @@ impl<const P: usize> ServerManager<P> {
                 match server_holder.handle_type {
                     WaitHandleType::Session => {
                         if P > 0 {
-                            // Send our pointer buffer as a C descriptor for kernel - why are Pointer buffers so fucking weird?
+                            // Send our pointer buffer as a C descriptor for kernel - why are
+                            // Pointer buffers so fucking weird?
                             let mut tmp_ctx = CommandContext::new_client(server_info);
-                            tmp_ctx.add_receive_static(ReceiveStaticDescriptor::new(self.pointer_buffer.as_ptr(), P))?;
-                            client::write_command_on_ipc_buffer(&mut tmp_ctx, CommandType::Invalid, 0);
+                            tmp_ctx.add_receive_static(ReceiveStaticDescriptor::new(
+                                self.pointer_buffer.as_ptr(),
+                                P,
+                            ))?;
+                            client::write_command_on_ipc_buffer(
+                                &mut tmp_ctx,
+                                CommandType::Invalid,
+                                0,
+                            );
                         }
 
                         match svc::reply_and_receive(&handle, 1, 0, -1) {
@@ -815,17 +1097,25 @@ impl<const P: usize> ServerManager<P> {
                                 if results::os::ResultSessionClosed::matches(rc) {
                                     should_close_session = true;
                                     break;
-                                }
-                                else {
+                                } else {
                                     return Err(rc);
                                 }
-                            },
+                            }
                             _ => {}
                         };
 
-                        unsafe { core::ptr::copy(get_ipc_buffer(), ipc_buf_backup.as_mut_ptr(), ipc_buf_backup.len()) };
+                        unsafe {
+                            core::ptr::copy(
+                                get_ipc_buffer(),
+                                ipc_buf_backup.as_mut_ptr(),
+                                ipc_buf_backup.len(),
+                            )
+                        };
 
-                        ctx = CommandContext::new_server(server_info, self.pointer_buffer.as_mut_ptr());
+                        ctx = CommandContext::new_server(
+                            server_info,
+                            self.pointer_buffer.as_mut_ptr(),
+                        );
                         command_type = read_command_from_ipc_buffer(&mut ctx);
                         match command_type {
                             CommandType::Request | CommandType::RequestWithContext => {
@@ -835,37 +1125,43 @@ impl<const P: usize> ServerManager<P> {
                                         if server_info.is_domain() {
                                             // This is a domain request
                                             base_info.domain_object_id = domain_object_id;
-                                            base_info.owns_handle = server_info.domain_object_id == domain_object_id;
+                                            base_info.owns_handle =
+                                                server_info.domain_object_id == domain_object_id;
                                         }
                                         ctx.object_info = base_info;
                                         domain_cmd_type = domain_command_type;
                                         rq_id = request_id;
                                         domain_table = server_holder.domain_table.clone();
-                                    },
-                                    Err(rc) => return Err(rc)
+                                    }
+                                    Err(rc) => return Err(rc),
                                 };
-                            },
+                            }
                             CommandType::Control | CommandType::ControlWithContext => {
                                 match read_control_command_from_ipc_buffer(&mut ctx) {
                                     Ok(control_rq_id) => {
                                         rq_id = control_rq_id as u32;
-                                    },
+                                    }
                                     Err(rc) => return Err(rc),
                                 };
-                            },
+                            }
                             _ => {}
                         }
-                    },
+                    }
                     WaitHandleType::Server => {
                         let new_handle = svc::accept_session(handle)?;
 
                         if server_holder.is_mitm_service {
                             let sm = service::tipc::new_named_port_object::<sm::UserInterface>()?;
-                            let (info, session_handle) = sm.get().atmosphere_acknowledge_mitm_session(server_holder.service_name)?;
-                            new_sessions.push(server_holder.make_new_mitm_session(new_handle, session_handle.handle, info)?);
+                            let (info, session_handle) = sm
+                                .get()
+                                .atmosphere_acknowledge_mitm_session(server_holder.service_name)?;
+                            new_sessions.push(server_holder.make_new_mitm_session(
+                                new_handle,
+                                session_handle.handle,
+                                info,
+                            )?);
                             sm.get().detach_client(tipc::sf::ProcessId::new())?;
-                        }
-                        else {
+                        } else {
                             new_sessions.push(server_holder.make_new_session(new_handle)?);
                         }
                     }
@@ -878,26 +1174,34 @@ impl<const P: usize> ServerManager<P> {
         let reply_impl = || -> Result<()> {
             match svc::reply_and_receive(&handle, 0, handle, 0) {
                 Err(rc) => {
-                    if results::os::ResultTimeout::matches(rc) || results::os::ResultSessionClosed::matches(rc) {
+                    if results::os::ResultTimeout::matches(rc)
+                        || results::os::ResultSessionClosed::matches(rc)
+                    {
                         Ok(())
-                    }
-                    else {
+                    } else {
                         Err(rc)
                     }
-                },
-                _ => Ok(())
+                }
+                _ => Ok(()),
             }
         };
 
         match command_type {
             CommandType::Request | CommandType::RequestWithContext => {
-                self.handle_request_command(&mut ctx, rq_id, command_type, domain_cmd_type, &ipc_buf_backup, domain_table)?;
+                self.handle_request_command(
+                    &mut ctx,
+                    rq_id,
+                    command_type,
+                    domain_cmd_type,
+                    &ipc_buf_backup,
+                    domain_table,
+                )?;
                 reply_impl()?;
-            },
+            }
             CommandType::Control | CommandType::ControlWithContext => {
                 self.handle_control_command(&mut ctx, rq_id, command_type)?;
                 reply_impl()?;
-            },
+            }
             CommandType::Close => {
                 write_close_command_response_on_ipc_buffer(&mut ctx);
                 reply_impl()?;
@@ -914,32 +1218,45 @@ impl<const P: usize> ServerManager<P> {
 
         match server_found {
             true => Ok(()),
-            false => Err(ResultCode::new(0x123))
+            false => Err(ResultCode::new(0x123)),
         }
     }
-    
-    pub fn register_server<S: IServerObject + 'static>(&mut self, handle: svc::Handle, service_name: sm::ServiceName) {
-        self.server_holders.push(ServerHolder::new_server::<S>(handle, service_name));
+
+    pub fn register_server<S: IServerObject + 'static>(
+        &mut self,
+        handle: svc::Handle,
+        service_name: sm::ServiceName,
+    ) {
+        self.server_holders
+            .push(ServerHolder::new_server::<S>(handle, service_name));
     }
 
-    pub fn register_mitm_server<S: IMitmServerObject + 'static>(&mut self, handle: svc::Handle, service_name: sm::ServiceName) {
-        self.server_holders.push(ServerHolder::new_mitm_server::<S>(handle, service_name));
+    pub fn register_mitm_server<S: IMitmServerObject + 'static>(
+        &mut self,
+        handle: svc::Handle,
+        service_name: sm::ServiceName,
+    ) {
+        self.server_holders
+            .push(ServerHolder::new_mitm_server::<S>(handle, service_name));
     }
-    
+
     pub fn register_session<S: IServerObject + 'static>(&mut self, handle: svc::Handle) {
-        self.server_holders.push(ServerHolder::new_server_session::<S>(handle));
+        self.server_holders
+            .push(ServerHolder::new_server_session::<S>(handle));
     }
-    
+
     pub fn register_service_server<S: IService + 'static>(&mut self) -> Result<()> {
         let service_name = sm::ServiceName::new(S::get_name());
-        
+
         let sm = service::tipc::new_named_port_object::<sm::UserInterface>()?;
-        let service_handle = sm.get().register_service(service_name, S::get_max_sesssions(), false)?;
+        let service_handle =
+            sm.get()
+                .register_service(service_name, S::get_max_sesssions(), false)?;
         self.register_server::<S>(service_handle.handle, service_name);
         sm.get().detach_client(tipc::sf::ProcessId::new())?;
         Ok(())
     }
-    
+
     pub fn register_mitm_service_server<S: IMitmService + 'static>(&mut self) -> Result<()> {
         let service_name = sm::ServiceName::new(S::get_name());
 
@@ -955,7 +1272,8 @@ impl<const P: usize> ServerManager<P> {
     }
 
     pub fn register_named_port_server<S: INamedPort + 'static>(&mut self) -> Result<()> {
-        let port_handle = svc::manage_named_port(S::get_port_name().as_ptr(), S::get_max_sesssions())?;
+        let port_handle =
+            svc::manage_named_port(S::get_port_name().as_ptr(), S::get_max_sesssions())?;
 
         self.register_server::<S>(port_handle, sm::ServiceName::empty());
         Ok(())
@@ -980,7 +1298,7 @@ impl<const P: usize> ServerManager<P> {
                         break;
                     }
                     return Err(rc);
-                },
+                }
                 _ => {}
             }
         }

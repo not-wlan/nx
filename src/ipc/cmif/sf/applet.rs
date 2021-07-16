@@ -1,6 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*};
 
 pub type AppletResourceUserId = u64;
 
@@ -8,7 +6,7 @@ pub type AppletResourceUserId = u64;
 #[repr(C)]
 pub struct AppletAttribute {
     flag: u8,
-    reserved: [u8; 0x7F]
+    reserved: [u8; 0x7F],
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -16,7 +14,7 @@ pub struct AppletAttribute {
 pub enum ScreenShotPermission {
     Inherit,
     Enable,
-    Disable
+    Disable,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

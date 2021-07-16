@@ -1,6 +1,5 @@
 use super::*;
-use crate::results;
-use crate::ipc::tipc::sf;
+use crate::{ipc::tipc::sf, results};
 use core::mem as cmem;
 
 #[inline(always)]
@@ -8,29 +7,60 @@ pub fn write_command_on_ipc_buffer(ctx: &mut CommandContext, command_type: u32, 
     unsafe {
         // TODO: in move handles are allowed?
         let mut ipc_buf = get_ipc_buffer();
-    
-        let has_special_header = ctx.in_params.send_process_id || ctx.in_params.copy_handles.len() > 0 || ctx.in_params.move_handles.len() > 0;
+
+        let has_special_header = ctx.in_params.send_process_id
+            || ctx.in_params.copy_handles.len() > 0
+            || ctx.in_params.move_handles.len() > 0;
         let data_word_count = (data_size + 3) / 4;
         let command_header = ipc_buf as *mut CommandHeader;
-        *command_header = CommandHeader::new(command_type, 0, ctx.send_buffers.len() as u32, ctx.receive_buffers.len() as u32, ctx.exchange_buffers.len() as u32, data_word_count, 0, has_special_header);
+        *command_header = CommandHeader::new(
+            command_type,
+            0,
+            ctx.send_buffers.len() as u32,
+            ctx.receive_buffers.len() as u32,
+            ctx.exchange_buffers.len() as u32,
+            data_word_count,
+            0,
+            has_special_header,
+        );
         ipc_buf = command_header.offset(1) as *mut u8;
 
         if has_special_header {
             let special_header = ipc_buf as *mut CommandSpecialHeader;
-            *special_header = CommandSpecialHeader::new(ctx.in_params.send_process_id, ctx.in_params.copy_handles.len() as u32, ctx.in_params.move_handles.len() as u32);
+            *special_header = CommandSpecialHeader::new(
+                ctx.in_params.send_process_id,
+                ctx.in_params.copy_handles.len() as u32,
+                ctx.in_params.move_handles.len() as u32,
+            );
             ipc_buf = special_header.offset(1) as *mut u8;
 
             if ctx.in_params.send_process_id {
                 ipc_buf = ipc_buf.offset(cmem::size_of::<u64>() as isize);
             }
 
-            ipc_buf = write_array_to_buffer(ipc_buf, ctx.in_params.copy_handles.len() as u32, &ctx.in_params.copy_handles);
-            ipc_buf = write_array_to_buffer(ipc_buf, ctx.in_params.move_handles.len() as u32, &ctx.in_params.move_handles);
+            ipc_buf = write_array_to_buffer(
+                ipc_buf,
+                ctx.in_params.copy_handles.len() as u32,
+                &ctx.in_params.copy_handles,
+            );
+            ipc_buf = write_array_to_buffer(
+                ipc_buf,
+                ctx.in_params.move_handles.len() as u32,
+                &ctx.in_params.move_handles,
+            );
         }
 
         ipc_buf = write_array_to_buffer(ipc_buf, ctx.send_buffers.len() as u32, &ctx.send_buffers);
-        ipc_buf = write_array_to_buffer(ipc_buf, ctx.receive_buffers.len() as u32, &ctx.receive_buffers);
-        ipc_buf = write_array_to_buffer(ipc_buf, ctx.exchange_buffers.len() as u32, &ctx.exchange_buffers);
+        ipc_buf = write_array_to_buffer(
+            ipc_buf,
+            ctx.receive_buffers.len() as u32,
+            &ctx.receive_buffers,
+        );
+        ipc_buf = write_array_to_buffer(
+            ipc_buf,
+            ctx.exchange_buffers.len() as u32,
+            &ctx.exchange_buffers,
+        );
         ctx.in_params.data_words_offset = ipc_buf;
     }
 }
@@ -56,8 +86,10 @@ pub fn read_command_response_from_ipc_buffer(ctx: &mut CommandContext) {
             }
         }
 
-        ipc_buf = read_array_from_buffer(ipc_buf, copy_handle_count, &mut ctx.out_params.copy_handles);
-        ipc_buf = read_array_from_buffer(ipc_buf, move_handle_count, &mut ctx.out_params.move_handles);
+        ipc_buf =
+            read_array_from_buffer(ipc_buf, copy_handle_count, &mut ctx.out_params.copy_handles);
+        ipc_buf =
+            read_array_from_buffer(ipc_buf, move_handle_count, &mut ctx.out_params.move_handles);
         ctx.out_params.data_words_offset = ipc_buf;
     }
 }
@@ -91,48 +123,86 @@ pub fn write_close_command_on_ipc_buffer(ctx: &mut CommandContext) {
 }
 
 pub trait CommandParameter<O> {
-    fn before_request_write(var: &Self, walker: &mut DataWalker, ctx: &mut CommandContext) -> Result<()>;
-    fn before_send_sync_request(var: &Self, walker: &mut DataWalker, ctx: &mut CommandContext) -> Result<()>;
+    fn before_request_write(
+        var: &Self,
+        walker: &mut DataWalker,
+        ctx: &mut CommandContext,
+    ) -> Result<()>;
+    fn before_send_sync_request(
+        var: &Self,
+        walker: &mut DataWalker,
+        ctx: &mut CommandContext,
+    ) -> Result<()>;
     fn after_response_read(walker: &mut DataWalker, ctx: &mut CommandContext) -> Result<O>;
 }
 
 impl<T: Copy> CommandParameter<T> for T {
-    default fn before_request_write(_raw: &Self, walker: &mut DataWalker, _ctx: &mut CommandContext) -> Result<()> {
+    default fn before_request_write(
+        _raw: &Self,
+        walker: &mut DataWalker,
+        _ctx: &mut CommandContext,
+    ) -> Result<()> {
         walker.advance::<Self>();
         Ok(())
     }
 
-    default fn before_send_sync_request(raw: &Self, walker: &mut DataWalker, _ctx: &mut CommandContext) -> Result<()> {
+    default fn before_send_sync_request(
+        raw: &Self,
+        walker: &mut DataWalker,
+        _ctx: &mut CommandContext,
+    ) -> Result<()> {
         walker.advance_set(*raw);
         Ok(())
     }
 
-    default fn after_response_read(walker: &mut DataWalker, _ctx: &mut CommandContext) -> Result<Self> {
+    default fn after_response_read(
+        walker: &mut DataWalker,
+        _ctx: &mut CommandContext,
+    ) -> Result<Self> {
         Ok(walker.advance_get())
     }
 }
 
-impl<const A: BufferAttribute, const S: usize> CommandParameter<sf::Buffer<A, S>> for sf::Buffer<A, S> {
-    fn before_request_write(buffer: &Self, _walker: &mut DataWalker, ctx: &mut CommandContext) -> Result<()> {
+impl<const A: BufferAttribute, const S: usize> CommandParameter<sf::Buffer<A, S>>
+    for sf::Buffer<A, S>
+{
+    fn before_request_write(
+        buffer: &Self,
+        _walker: &mut DataWalker,
+        ctx: &mut CommandContext,
+    ) -> Result<()> {
         ctx.add_buffer(*buffer)
     }
 
-    fn before_send_sync_request(_buffer: &Self, _walker: &mut DataWalker, _ctx: &mut CommandContext) -> Result<()> {
+    fn before_send_sync_request(
+        _buffer: &Self,
+        _walker: &mut DataWalker,
+        _ctx: &mut CommandContext,
+    ) -> Result<()> {
         Ok(())
     }
 
     fn after_response_read(_walker: &mut DataWalker, _ctx: &mut CommandContext) -> Result<Self> {
-        // Buffers aren't returned as output variables - the buffer sent as input (with Out attribute) will contain the output data
+        // Buffers aren't returned as output variables - the buffer sent as input (with
+        // Out attribute) will contain the output data
         Err(results::hipc::ResultUnsupportedOperation::make())
     }
 }
 
 impl<const M: HandleMode> CommandParameter<sf::Handle<M>> for sf::Handle<M> {
-    fn before_request_write(handle: &Self, _walker: &mut DataWalker, ctx: &mut CommandContext) -> Result<()> {
+    fn before_request_write(
+        handle: &Self,
+        _walker: &mut DataWalker,
+        ctx: &mut CommandContext,
+    ) -> Result<()> {
         ctx.in_params.add_handle(*handle)
     }
 
-    fn before_send_sync_request(_handle: &Self, _walker: &mut DataWalker, _ctx: &mut CommandContext) -> Result<()> {
+    fn before_send_sync_request(
+        _handle: &Self,
+        _walker: &mut DataWalker,
+        _ctx: &mut CommandContext,
+    ) -> Result<()> {
         Ok(())
     }
 
@@ -142,13 +212,21 @@ impl<const M: HandleMode> CommandParameter<sf::Handle<M>> for sf::Handle<M> {
 }
 
 impl CommandParameter<sf::ProcessId> for sf::ProcessId {
-    fn before_request_write(_process_id: &Self, _walker: &mut DataWalker, ctx: &mut CommandContext) -> Result<()> {
+    fn before_request_write(
+        _process_id: &Self,
+        _walker: &mut DataWalker,
+        ctx: &mut CommandContext,
+    ) -> Result<()> {
         ctx.in_params.send_process_id = true;
         // In TIPC, process IDs do not require placeholder space in raw data
         Ok(())
     }
 
-    fn before_send_sync_request(_process_id: &Self, _walker: &mut DataWalker, _ctx: &mut CommandContext) -> Result<()> {
+    fn before_send_sync_request(
+        _process_id: &Self,
+        _walker: &mut DataWalker,
+        _ctx: &mut CommandContext,
+    ) -> Result<()> {
         // In TIPC, process IDs do not require placeholder space in raw data
         Ok(())
     }

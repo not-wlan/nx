@@ -1,8 +1,10 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::ipc::tipc::sf::sm;
+use crate::{
+    ipc::{cmif::sf, tipc::sf::sm},
+    result::*,
+};
 
-// Interfaces related to core serverside IPC (for control requests and MitM support)
+// Interfaces related to core serverside IPC (for control requests and MitM
+// support)
 
 pub trait IHipcManager {
     ipc_cmif_control_interface_define_command!(convert_current_object_to_domain: () => (domain_object_id: u32));

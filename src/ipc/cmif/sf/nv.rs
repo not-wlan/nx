@@ -1,5 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
+use crate::{ipc::cmif::sf, result::*};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Derivative)]
 #[derivative(Default)]

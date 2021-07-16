@@ -1,12 +1,9 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::service;
-use crate::mem;
+use crate::{ipc::cmif::sf, mem, result::*, service};
 
 pub use crate::ipc::cmif::sf::psc::*;
 
 pub struct PmModule {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for PmModule {
@@ -15,12 +12,12 @@ impl sf::IObject for PmModule {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
+        vec![
             ipc_cmif_interface_make_command_meta!(initialize: 0),
             ipc_cmif_interface_make_command_meta!(get_request: 1),
             ipc_cmif_interface_make_command_meta!(acknowledge: 2),
             ipc_cmif_interface_make_command_meta!(finalize: 3),
-            ipc_cmif_interface_make_command_meta!(acknowledge_ex: 4)
+            ipc_cmif_interface_make_command_meta!(acknowledge_ex: 4),
         ]
     }
 }
@@ -32,7 +29,11 @@ impl service::cmif::IClientObject for PmModule {
 }
 
 impl IPmModule for PmModule {
-    fn initialize(&mut self, id: ModuleId, dependencies: sf::InMapAliasBuffer) -> Result<sf::CopyHandle> {
+    fn initialize(
+        &mut self,
+        id: ModuleId,
+        dependencies: sf::InMapAliasBuffer,
+    ) -> Result<sf::CopyHandle> {
         ipc_cmif_client_send_request_command!([self.session.object_info; 0] (id, dependencies) => (event_handle: sf::CopyHandle))
     }
 
@@ -54,7 +55,7 @@ impl IPmModule for PmModule {
 }
 
 pub struct PmService {
-    session: sf::Session
+    session: sf::Session,
 }
 
 impl sf::IObject for PmService {
@@ -63,9 +64,7 @@ impl sf::IObject for PmService {
     }
 
     fn get_command_table(&self) -> sf::CommandMetadataTable {
-        vec! [
-            ipc_cmif_interface_make_command_meta!(get_pm_module: 0)
-        ]
+        vec![ipc_cmif_interface_make_command_meta!(get_pm_module: 0)]
     }
 }
 

@@ -1,7 +1,4 @@
-use crate::result::*;
-use crate::ipc::cmif::sf;
-use crate::mem;
-use crate::util;
+use crate::{ipc::cmif::sf, mem, result::*, util};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Derivative)]
 #[derivative(Default)]
@@ -11,7 +8,7 @@ pub enum Age {
     Normal,
     Old,
     #[derivative(Default)]
-    All
+    All,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Derivative)]
@@ -21,7 +18,7 @@ pub enum Gender {
     Male,
     Female,
     #[derivative(Default)]
-    All
+    All,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Derivative)]
@@ -32,7 +29,7 @@ pub enum FaceColor {
     White,
     Asian,
     #[derivative(Default)]
-    All
+    All,
 }
 
 bit_enum! {
@@ -48,7 +45,7 @@ bit_enum! {
 pub enum SpecialKeyCode {
     #[derivative(Default)]
     Normal = 0,
-    Special = 0xA523B78F
+    Special = 0xA523B78F,
 }
 
 pub type CreateId = util::Uuid;
@@ -106,7 +103,7 @@ pub struct CharInfo {
     pub mii_mole_size: u8,
     pub mii_mole_pos_x: u8,
     pub mii_mole_pos_y: u8,
-    pub unk_3: u8
+    pub unk_3: u8,
 }
 
 pub trait IDatabaseService {

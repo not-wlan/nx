@@ -1,7 +1,4 @@
-use crate::thread;
-use crate::result::*;
-use crate::mem;
-use crate::ipc::cmif::sf;
+use crate::{ipc::cmif::sf, mem, result::*, thread};
 use alloc::string::String;
 
 pub type LogSeverity = logpacket::detail::LogSeverity;
@@ -12,11 +9,18 @@ pub struct LogMetadata {
     pub msg: String,
     pub file_name: &'static str,
     pub fn_name: &'static str,
-    pub line_no: u32
+    pub line_no: u32,
 }
 
 impl LogMetadata {
-    pub fn new(severity: LogSeverity, verbosity: bool, msg: String, file_name: &'static str, fn_name: &'static str, line_no: u32) -> Self {
+    pub fn new(
+        severity: LogSeverity,
+        verbosity: bool,
+        msg: String,
+        file_name: &'static str,
+        fn_name: &'static str,
+        line_no: u32,
+    ) -> Self {
         Self {
             severity: severity,
             verbosity: verbosity,
@@ -50,7 +54,17 @@ fn format_plain_string_log_impl(metadata: &LogMetadata, log_type: &str) -> Strin
         Ok(name) => name,
         _ => "<unknown>",
     };
-    format!("[ {} (severity: {}, verbosity: {}) from {} in thread {}, at {}:{} ] {}", log_type, severity_str, metadata.verbosity, metadata.fn_name, thread_name, metadata.file_name, metadata.line_no, metadata.msg)
+    format!(
+        "[ {} (severity: {}, verbosity: {}) from {} in thread {}, at {}:{} ] {}",
+        log_type,
+        severity_str,
+        metadata.verbosity,
+        metadata.fn_name,
+        thread_name,
+        metadata.file_name,
+        metadata.line_no,
+        metadata.msg
+    )
 }
 
 use crate::svc;
@@ -68,37 +82,43 @@ impl Logger for SvcOutputLogger {
     }
 }
 
-use crate::service;
-use crate::service::cmif::fspsrv;
-use crate::service::cmif::fspsrv::IFileSystemProxy;
+use crate::{
+    service,
+    service::cmif::{fspsrv, fspsrv::IFileSystemProxy},
+};
 
 pub struct FsAccessLogLogger {
-    service: Result<mem::Shared<fspsrv::FileSystemProxy>>
+    service: Result<mem::Shared<fspsrv::FileSystemProxy>>,
 }
 
 impl Logger for FsAccessLogLogger {
     fn new() -> Self {
-        Self { service:service::cmif::new_service_object() }
+        Self {
+            service: service::cmif::new_service_object(),
+        }
     }
 
     fn log(&mut self, metadata: &LogMetadata) {
         let msg = format_plain_string_log_impl(metadata, "FsAccessLog");
         match self.service {
             Ok(ref mut fspsrv) => {
-                let _ = fspsrv.get().output_access_log_to_sd_card(sf::Buffer::from_const(msg.as_ptr(), msg.len()));
-            },
+                let _ = fspsrv
+                    .get()
+                    .output_access_log_to_sd_card(sf::Buffer::from_const(msg.as_ptr(), msg.len()));
+            }
             _ => {}
         }
     }
 }
 
-use crate::service::cmif::lm;
-use crate::service::cmif::lm::ILogService;
-use crate::service::cmif::lm::ILogger;
+use crate::service::cmif::{
+    lm,
+    lm::{ILogService, ILogger},
+};
 
 pub struct LmLogger {
     service: Result<mem::Shared<lm::LogService>>,
-    logger: Result<mem::Shared<lm::Logger>>
+    logger: Result<mem::Shared<lm::Logger>>,
 }
 
 impl Logger for LmLogger {
@@ -111,7 +131,10 @@ impl Logger for LmLogger {
             },
             Err(rc) => Err(rc),
         };
-        Self { service: service, logger: logger }
+        Self {
+            service: service,
+            logger: logger,
+        }
     }
 
     fn log(&mut self, metadata: &LogMetadata) {
@@ -121,7 +144,9 @@ impl Logger for LmLogger {
                     Ok(ref mut logger) => {
                         let mut log_packet = logpacket::LogPacket::new();
 
-                        if let Ok(process_id) = svc::get_process_id(svc::CURRENT_PROCESS_PSEUDO_HANDLE) {
+                        if let Ok(process_id) =
+                            svc::get_process_id(svc::CURRENT_PROCESS_PSEUDO_HANDLE)
+                        {
                             log_packet.set_process_id(process_id);
                         }
 
@@ -141,9 +166,11 @@ impl Logger for LmLogger {
                         };
                         log_packet.set_thread_name(String::from(thread_name));
                         for packet in log_packet.encode_packet() {
-                            let _ = logger.get().log(sf::Buffer::from_const(packet.as_ptr(), packet.len()));
+                            let _ = logger
+                                .get()
+                                .log(sf::Buffer::from_const(packet.as_ptr(), packet.len()));
                         }
-                    },
+                    }
                     _ => {}
                 }
             }
