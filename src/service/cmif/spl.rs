@@ -18,7 +18,7 @@ impl sf::IObject for RandomInterface {
 
 impl service::cmif::IClientObject for RandomInterface {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

@@ -67,26 +67,26 @@ impl<NS: nv::INvDrvService> Surface<NS> {
         let buffer_event_handle =
             binder.get_native_handle(dispdrv::NativeHandleType::BufferEvent)?;
         let mut surface = Self {
-            binder: binder,
-            nvdrv_srv: nvdrv_srv,
-            application_display_service: application_display_service,
-            width: width,
-            height: height,
+            binder,
+            nvdrv_srv,
+            application_display_service,
+            width,
+            height,
             buffer_data: ptr::null_mut(),
             buffer_alloc_layout: alloc::alloc::Layout::new::<u8>(),
             single_buffer_size: 0,
-            buffer_count: buffer_count,
+            buffer_count,
             slot_has_requested: [false; MAX_BUFFERS],
             graphic_buf: Default::default(),
-            color_fmt: color_fmt,
-            pixel_fmt: pixel_fmt,
-            layout: layout,
-            display_id: display_id,
-            layer_id: layer_id,
-            layer_destroy_fn: layer_destroy_fn,
-            nvhost_fd: nvhost_fd,
-            nvmap_fd: nvmap_fd,
-            nvhostctrl_fd: nvhostctrl_fd,
+            color_fmt,
+            pixel_fmt,
+            layout,
+            display_id,
+            layer_id,
+            layer_destroy_fn,
+            nvhost_fd,
+            nvmap_fd,
+            nvhostctrl_fd,
             vsync_event_handle: vsync_event_handle.handle,
             buffer_event_handle: buffer_event_handle.handle,
         };
@@ -264,8 +264,7 @@ impl<NS: nv::INvDrvService> Surface<NS> {
         }
 
         let buf = unsafe {
-            self.buffer_data
-                .offset((slot as usize * self.single_buffer_size) as isize)
+            self.buffer_data.add((slot as usize * self.single_buffer_size))
         };
         Ok((buf, self.single_buffer_size, slot, has_fences, fences))
     }
@@ -290,7 +289,7 @@ impl<NS: nv::INvDrvService> Surface<NS> {
             ioctl_syncptwait.fence = fences.fences[i as usize];
             ioctl_syncptwait.timeout = timeout;
 
-            if let Err(_) = self.do_ioctl(&mut ioctl_syncptwait) {
+            if self.do_ioctl(&mut ioctl_syncptwait).is_err() {
                 // Don't error, but stop waiting for fences
                 break;
             }

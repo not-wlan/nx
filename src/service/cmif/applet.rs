@@ -22,7 +22,7 @@ impl sf::IObject for StorageAccessor {
 
 impl service::cmif::IClientObject for StorageAccessor {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -56,7 +56,7 @@ impl sf::IObject for Storage {
 
 impl service::cmif::IClientObject for Storage {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -86,7 +86,7 @@ impl sf::IObject for LibraryAppletAccessor {
 
 impl service::cmif::IClientObject for LibraryAppletAccessor {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -123,7 +123,7 @@ impl sf::IObject for LibraryAppletCreator {
 
 impl service::cmif::IClientObject for LibraryAppletCreator {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -157,7 +157,7 @@ impl sf::IObject for WindowController {
 
 impl service::cmif::IClientObject for WindowController {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -183,7 +183,7 @@ impl sf::IObject for SelfController {
 
 impl service::cmif::IClientObject for SelfController {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -213,7 +213,7 @@ impl sf::IObject for LibraryAppletProxy {
 
 impl service::cmif::IClientObject for LibraryAppletProxy {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -247,7 +247,7 @@ impl sf::IObject for AllSystemAppletProxiesService {
 
 impl service::cmif::IClientObject for AllSystemAppletProxiesService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

@@ -23,7 +23,7 @@ impl sf::IObject for HOSBinderDriver {
 
 impl service::cmif::IClientObject for HOSBinderDriver {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

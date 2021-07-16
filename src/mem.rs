@@ -66,7 +66,7 @@ impl<T> Shared<T> {
         // function
         let object = Box::into_raw(Box::new(var));
         let mut shared = Self {
-            object: object,
+            object,
             refcount: Refcount::new(),
         };
         shared.refcount.acquire(object);

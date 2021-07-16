@@ -30,14 +30,14 @@ impl<const A: BufferAttribute, const S: usize> Buffer<A, S> {
     pub const fn from_const<T>(buf: *const T, size: usize) -> Self {
         Self {
             buf: buf as *const u8,
-            size: size,
+            size,
         }
     }
 
     pub const fn from_mut<T>(buf: *mut T, size: usize) -> Self {
         Self {
             buf: buf as *const u8,
-            size: size,
+            size,
         }
     }
 
@@ -77,7 +77,7 @@ impl<const A: BufferAttribute, const S: usize> Buffer<A, S> {
         unsafe {
             let mut string = String::with_capacity(self.size);
             for i in 0..self.size {
-                let cur_char = *self.buf.offset(i as isize) as char;
+                let cur_char = *self.buf.add(i) as char;
                 if cur_char == '\0' {
                     break;
                 }
@@ -132,7 +132,7 @@ pub struct Handle<const M: HandleMode> {
 
 impl<const M: HandleMode> Handle<M> {
     pub const fn from(handle: svc::Handle) -> Self {
-        Self { handle: handle }
+        Self { handle }
     }
 }
 
@@ -147,7 +147,7 @@ pub struct ProcessId {
 impl ProcessId {
     pub const fn from(process_id: u64) -> Self {
         Self {
-            process_id: process_id,
+            process_id,
         }
     }
 
@@ -169,7 +169,7 @@ impl Session {
 
     pub const fn from(object_info: ObjectInfo) -> Self {
         Self {
-            object_info: object_info,
+            object_info,
         }
     }
 
@@ -224,10 +224,10 @@ impl CommandMetadata {
         max_ver: Option<version::Version>,
     ) -> Self {
         Self {
-            rq_id: rq_id,
-            command_fn: command_fn,
-            min_ver: min_ver,
-            max_ver: max_ver,
+            rq_id,
+            command_fn,
+            min_ver,
+            max_ver,
         }
     }
 

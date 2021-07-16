@@ -21,7 +21,7 @@ impl sf::IObject for Logger {
 
 impl service::cmif::IClientObject for Logger {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -51,7 +51,7 @@ impl sf::IObject for LogService {
 
 impl service::cmif::IClientObject for LogService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

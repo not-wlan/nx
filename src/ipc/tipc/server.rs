@@ -1,7 +1,6 @@
 use super::*;
 use crate::{
     mem,
-    result::*,
     results, service,
     service::tipc::{sm, sm::IUserInterface},
     svc,
@@ -24,9 +23,9 @@ impl<'a> ServerContext<'a> {
         new_sessions: &'a mut Vec<ServerHolder>,
     ) -> Self {
         Self {
-            ctx: ctx,
-            raw_data_walker: raw_data_walker,
-            new_sessions: new_sessions,
+            ctx,
+            raw_data_walker,
+            new_sessions,
         }
     }
 }
@@ -88,8 +87,8 @@ pub fn write_command_response_on_ipc_buffer(
 
         let data_word_count = (data_size + 3) / 4;
         let has_special_header = ctx.out_params.send_process_id
-            || (ctx.out_params.copy_handles.len() > 0)
-            || (ctx.out_params.move_handles.len() > 0);
+            || !ctx.out_params.copy_handles.is_empty()
+            || !ctx.out_params.move_handles.is_empty();
         *command_header = CommandHeader::new(
             command_type,
             0,
@@ -111,7 +110,7 @@ pub fn write_command_response_on_ipc_buffer(
                 ctx.out_params.move_handles.len() as u32,
             );
             if ctx.out_params.send_process_id {
-                ipc_buf = ipc_buf.offset(cmem::size_of::<u64>() as isize);
+                ipc_buf = ipc_buf.add(cmem::size_of::<u64>());
             }
 
             ipc_buf = write_array_to_buffer(
@@ -353,7 +352,7 @@ impl ServerHolder {
             handle_type: WaitHandleType::Server,
             mitm_forward_info: ObjectInfo::new(),
             is_mitm_service: false,
-            service_name: service_name,
+            service_name,
         }
     }
 
@@ -369,7 +368,7 @@ impl ServerHolder {
             handle_type: WaitHandleType::Server,
             mitm_forward_info: ObjectInfo::new(),
             is_mitm_service: true,
-            service_name: service_name,
+            service_name,
         }
     }
 

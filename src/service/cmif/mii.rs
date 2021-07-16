@@ -24,7 +24,7 @@ impl sf::IObject for DatabaseService {
 
 impl service::cmif::IClientObject for DatabaseService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -71,7 +71,7 @@ impl sf::IObject for StaticService {
 
 impl service::cmif::IClientObject for StaticService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

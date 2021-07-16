@@ -5,7 +5,6 @@ use crate::{
         IObject,
     },
     mem,
-    result::*,
     results, service,
     service::tipc::{sm, sm::IUserInterface},
     svc, wait,
@@ -32,10 +31,10 @@ impl<'a> ServerContext<'a> {
         new_sessions: &'a mut Vec<ServerHolder>,
     ) -> Self {
         Self {
-            ctx: ctx,
-            raw_data_walker: raw_data_walker,
-            domain_table: domain_table,
-            new_sessions: new_sessions,
+            ctx,
+            raw_data_walker,
+            domain_table,
+            new_sessions,
         }
     }
 }
@@ -104,8 +103,8 @@ pub fn write_command_response_on_ipc_buffer(
 
         let data_word_count = (data_size + 3) / 4;
         let has_special_header = ctx.out_params.send_process_id
-            || (ctx.out_params.copy_handles.len() > 0)
-            || (ctx.out_params.move_handles.len() > 0);
+            || !ctx.out_params.copy_handles.is_empty()
+            || !ctx.out_params.move_handles.is_empty();
         *command_header = CommandHeader::new(
             command_type as u32,
             ctx.send_statics.len() as u32,
@@ -127,7 +126,7 @@ pub fn write_command_response_on_ipc_buffer(
                 ctx.out_params.move_handles.len() as u32,
             );
             if ctx.out_params.send_process_id {
-                ipc_buf = ipc_buf.offset(cmem::size_of::<u64>() as isize);
+                ipc_buf = ipc_buf.add(cmem::size_of::<u64>());
             }
 
             ipc_buf = write_array_to_buffer(
@@ -239,9 +238,7 @@ pub fn write_request_command_response_on_ipc_buffer(
             let domain_header = data_offset as *mut DomainOutDataHeader;
             data_offset = domain_header.offset(1) as *mut u8;
             *domain_header = DomainOutDataHeader::new(ctx.out_params.objects.len() as u32);
-            let objects_offset = data_offset.offset(
-                (cmem::size_of::<DataHeader>() + ctx.out_params.data_size as usize) as isize,
-            );
+            let objects_offset = data_offset.add((cmem::size_of::<DataHeader>() + ctx.out_params.data_size as usize));
             write_array_to_buffer(
                 objects_offset,
                 ctx.out_params.objects.len() as u32,
@@ -589,7 +586,7 @@ impl ServerHolder {
             handle_type: WaitHandleType::Server,
             mitm_forward_info: ObjectInfo::new(),
             is_mitm_service: false,
-            service_name: service_name,
+            service_name,
             domain_table: mem::Shared::empty(),
         }
     }
@@ -606,7 +603,7 @@ impl ServerHolder {
             handle_type: WaitHandleType::Server,
             mitm_forward_info: ObjectInfo::new(),
             is_mitm_service: true,
-            service_name: service_name,
+            service_name,
             domain_table: mem::Shared::empty(),
         }
     }
@@ -740,8 +737,8 @@ impl<'a> HipcManager<'a> {
     pub fn new(server_holder: &'a mut ServerHolder, pointer_buf_size: usize) -> Self {
         Self {
             session: sf::Session::new(),
-            server_holder: server_holder,
-            pointer_buf_size: pointer_buf_size,
+            server_holder,
+            pointer_buf_size,
             cloned_object_server_handle: 0,
             cloned_object_forward_handle: 0,
         }

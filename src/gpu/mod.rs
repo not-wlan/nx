@@ -828,12 +828,12 @@ impl<
             nvdrv_service: nvdrv_srv,
             application_display_service: application_display_srv,
             hos_binder_driver: hos_binder_drv,
-            transfer_mem: transfer_mem,
-            transfer_mem_alloc_layout: transfer_mem_alloc_layout,
-            transfer_mem_handle: transfer_mem_handle,
-            nvhost_fd: nvhost_fd,
-            nvmap_fd: nvmap_fd,
-            nvhostctrl_fd: nvhostctrl_fd,
+            transfer_mem,
+            transfer_mem_alloc_layout,
+            transfer_mem_handle,
+            nvhost_fd,
+            nvmap_fd,
+            nvhostctrl_fd,
         })
     }
 
@@ -1031,7 +1031,7 @@ impl<
         )?;
         Self::set_layer_position_impl(layer_id, x, y, system_display_service.clone())?;
         Self::set_layer_size_impl(layer_id, width, height, system_display_service.clone())?;
-        Self::set_layer_z_impl(display_id, layer_id, z, system_display_service.clone())?;
+        Self::set_layer_z_impl(display_id, layer_id, z, system_display_service)?;
 
         self.create_surface_impl(
             buffer_count,

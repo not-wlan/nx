@@ -18,7 +18,7 @@ impl sf::IObject for SystemSettingsServer {
 
 impl service::cmif::IClientObject for SystemSettingsServer {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

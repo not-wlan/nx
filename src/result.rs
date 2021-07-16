@@ -42,7 +42,7 @@ pub struct ResultCode {
 
 impl ResultCode {
     pub const fn new(value: u32) -> Self {
-        Self { value: value }
+        Self { value }
     }
 
     pub const fn is_success(&self) -> bool {

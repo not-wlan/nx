@@ -27,7 +27,7 @@ impl sf::IObject for ManagerDisplayService {
 
 impl service::cmif::IClientObject for ManagerDisplayService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -69,7 +69,7 @@ impl sf::IObject for SystemDisplayService {
 
 impl service::cmif::IClientObject for SystemDisplayService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -125,7 +125,7 @@ impl sf::IObject for ApplicationDisplayService {
 
 impl service::cmif::IClientObject for ApplicationDisplayService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -194,7 +194,7 @@ impl sf::IObject for SystemRootService {
 
 impl service::cmif::IClientObject for SystemRootService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -237,7 +237,7 @@ impl sf::IObject for ManagerRootService {
 
 impl service::cmif::IClientObject for ManagerRootService {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

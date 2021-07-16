@@ -18,7 +18,7 @@ impl sf::IObject for Service {
 
 impl service::cmif::IClientObject for Service {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

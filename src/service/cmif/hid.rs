@@ -18,7 +18,7 @@ impl sf::IObject for AppletResource {
 
 impl service::cmif::IClientObject for AppletResource {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 
@@ -52,7 +52,7 @@ impl sf::IObject for HidServer {
 
 impl service::cmif::IClientObject for HidServer {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

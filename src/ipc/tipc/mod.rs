@@ -25,7 +25,7 @@ impl ObjectInfo {
 
     pub const fn from_handle(handle: svc::Handle) -> Self {
         Self {
-            handle: handle,
+            handle,
             owns_handle: true,
         }
     }
@@ -64,10 +64,10 @@ impl DataHeader {
 
     pub const fn new(magic: u32, version: u32, value: u32, token: u32) -> Self {
         Self {
-            magic: magic,
-            version: version,
-            value: value,
-            token: token,
+            magic,
+            version,
+            value,
+            token,
         }
     }
 }

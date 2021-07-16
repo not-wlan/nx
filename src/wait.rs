@@ -10,7 +10,7 @@ impl RemoteEvent {
     }
 
     pub const fn new(handle: svc::Handle) -> Self {
-        Self { handle: handle }
+        Self { handle }
     }
 
     pub fn reset(&self) -> Result<()> {
@@ -47,8 +47,8 @@ impl SystemEvent {
     pub fn new() -> Result<Self> {
         let (server_handle, client_handle) = svc::create_event()?;
         Ok(Self {
-            server_handle: server_handle,
-            client_handle: client_handle,
+            server_handle,
+            client_handle,
         })
     }
 
@@ -80,8 +80,8 @@ pub struct Waiter {
 impl Waiter {
     pub const fn from(handle: svc::Handle, wait_type: WaiterType) -> Self {
         Self {
-            handle: handle,
-            wait_type: wait_type,
+            handle,
+            wait_type,
         }
     }
 

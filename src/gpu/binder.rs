@@ -3,7 +3,6 @@ use crate::{
     gpu::parcel,
     ipc::cmif::sf,
     mem,
-    result::*,
     results,
     service::cmif::{dispdrv, dispdrv::IHOSBinderDriver},
 };
@@ -85,8 +84,8 @@ impl Binder {
         hos_binder_driver: mem::Shared<dispdrv::HOSBinderDriver>,
     ) -> Result<Self> {
         Ok(Self {
-            handle: handle,
-            hos_binder_driver: hos_binder_driver,
+            handle,
+            hos_binder_driver,
         })
     }
 

@@ -16,8 +16,8 @@
 #![feature(const_mut_refs)]
 #![allow(
   // This should be fixed lol...
-  not_unsafe_ptr_arg_deref,
-  mut_from_ref
+  clippy::not_unsafe_ptr_arg_deref,
+  clippy::mut_from_ref
 )]
 
 #![macro_use]

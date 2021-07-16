@@ -49,9 +49,9 @@ impl BufferDescriptor {
         write_bits!(28, 31, bits, address_mid);
 
         Self {
-            size_low: size_low,
-            address_low: address_low,
-            bits: bits,
+            size_low,
+            address_low,
+            bits,
         }
     }
 
@@ -96,8 +96,8 @@ impl SendStaticDescriptor {
         write_bits!(16, 31, bits, buffer_size as u32);
 
         Self {
-            bits: bits,
-            address_low: address_low,
+            bits,
+            address_low,
         }
     }
 
@@ -138,8 +138,8 @@ impl ReceiveStaticDescriptor {
         write_bits!(16, 31, bits, buffer_size as u32);
 
         Self {
-            address_low: address_low,
-            bits: bits,
+            address_low,
+            bits,
         }
     }
 
@@ -219,8 +219,8 @@ impl CommandHeader {
         write_bits!(31, 31, bits_2, has_special_header as u32);
 
         Self {
-            bits_1: bits_1,
-            bits_2: bits_2,
+            bits_1,
+            bits_2,
         }
     }
 
@@ -279,7 +279,7 @@ impl CommandSpecialHeader {
         write_bits!(1, 4, bits, copy_handle_count);
         write_bits!(5, 8, bits, move_handle_count);
 
-        Self { bits: bits }
+        Self { bits }
     }
 
     pub const fn get_send_process_id(&self) -> bool {
@@ -328,7 +328,7 @@ impl DataWalker {
 
     pub fn new(ptr: *mut u8) -> Self {
         Self {
-            ptr: ptr,
+            ptr,
             cur_offset: 0,
         }
     }

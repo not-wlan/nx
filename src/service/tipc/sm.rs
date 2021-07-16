@@ -33,7 +33,7 @@ impl sf::IObject for UserInterface {
 
 impl service::tipc::IClientObject for UserInterface {
     fn new(session: sf::Session) -> Self {
-        Self { session: session }
+        Self { session }
     }
 }
 

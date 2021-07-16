@@ -181,8 +181,8 @@ pub struct Player {
 impl Player {
     pub fn new(controller: hid::ControllerId, data: *const ControllerData) -> Self {
         Self {
-            controller: controller,
-            data: data,
+            controller,
+            data,
             prev_button_state: 0,
         }
     }
@@ -301,7 +301,7 @@ impl InputContext {
             hid_service: hid_srv,
             applet_resource: applet_res,
             shared_mem_handle: shmem_handle.handle,
-            aruid: aruid,
+            aruid,
             shared_mem_data: shmem_address as *const SharedMemoryData,
         })
     }

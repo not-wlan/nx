@@ -19,9 +19,9 @@ impl Version {
 
     pub const fn new(major: u8, minor: u8, micro: u8) -> Self {
         Self {
-            major: major,
-            minor: minor,
-            micro: micro,
+            major,
+            minor,
+            micro,
         }
     }
 }

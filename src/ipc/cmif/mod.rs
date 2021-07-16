@@ -31,7 +31,7 @@ impl ObjectInfo {
 
     pub const fn from_handle(handle: svc::Handle) -> Self {
         Self {
-            handle: handle,
+            handle,
             domain_object_id: 0,
             owns_handle: true,
         }
@@ -43,7 +43,7 @@ impl ObjectInfo {
     ) -> Self {
         Self {
             handle: parent_handle,
-            domain_object_id: domain_object_id,
+            domain_object_id,
             owns_handle: false,
         }
     }
@@ -113,12 +113,12 @@ impl DomainInDataHeader {
         token: u32,
     ) -> Self {
         Self {
-            command_type: command_type,
-            object_count: object_count,
-            data_size: data_size,
-            domain_object_id: domain_object_id,
+            command_type,
+            object_count,
+            data_size,
+            domain_object_id,
             pad: 0,
-            token: token,
+            token,
         }
     }
 }
@@ -194,10 +194,10 @@ impl DataHeader {
 
     pub const fn new(magic: u32, version: u32, value: u32, token: u32) -> Self {
         Self {
-            magic: magic,
-            version: version,
-            value: value,
-            token: token,
+            magic,
+            version,
+            value,
+            token,
         }
     }
 }
@@ -652,8 +652,7 @@ impl CommandContext {
                 self.pointer_buffer_offset =
                     crate::mem::align_down(self.pointer_buffer_offset - buf_size, 0x10);
                 let buf = unsafe {
-                    self.pointer_buffer
-                        .offset(self.pointer_buffer_offset as isize)
+                    self.pointer_buffer.add(self.pointer_buffer_offset)
                 };
                 self.add_send_static(SendStaticDescriptor::new(
                     buf as *const u8,
